@@ -1,0 +1,111 @@
+This document provides detailed information about the available API endpoints in 
+the SyncBro backend system.
+
+1. HEALTH CHECK {
+
+    Endpoint:    GET /api/health
+    Description: Check if the API is running.
+    Response:
+    {
+      "success": true,
+      "message": "Server is healthy",
+      "timestamp": "2026-04-16T..."
+    }
+
+}
+
+2. STANDARD ERROR RESPONSES {
+
+    All API errors follow this standard format:
+    {
+      "success": false,
+      "message": "Error description",
+      "stack": "Stack trace (only in development mode)"
+    }
+
+    Common Status Codes:
+    - 400: Validation Exception (Bad Request)
+    - 401: Unauthorized (Login required / Invalid token)
+    - 404: Not Found
+    - 429: Rate Limit Exceeded
+    - 500: Internal Server Error
+
+}
+
+3. AUTH & USER MANAGEMENT {
+
+    3.1 AUTH MODULE {
+        
+        Endpoint:    POST /api/auth/register
+        Description: Register a new user and set httpOnly auth cookie.
+        Input:
+        {
+          "email": "user@example.com",
+          "password": "Password123!",
+          "name": "John Doe",
+          "avatarUrl": "https://example.com/avatar.png" // Optional
+        }
+        Response:
+        {
+          "success": true,
+          "message": "User registered successfully",
+          "user": {
+            "id": "uuid...",
+            "email": "user@example.com",
+            "name": "John Doe",
+            "avatarUrl": "..."
+          }
+        }
+
+        ................................................................................
+
+        Endpoint:    POST /api/auth/login
+        Description: Authenticate user, set httpOnly session cookie.
+        Rate Limit:  20 requests per 15 mins.
+        Input:
+        {
+          "email": "user@example.com",
+          "password": "Password123!"
+        }
+        Response:
+        {
+          "success": true,
+          "message": "Logged in successfully",
+          "user": {
+            "id": "uuid...",
+            "email": "user@example.com",
+            "name": "John Doe",
+            "avatarUrl": "..."
+          }
+        }
+
+        ................................................................................
+
+        Endpoint:    POST /api/auth/logout
+        Description: Clear the auth session cookie.
+        Response:
+        {
+          "success": true,
+          "message": "Logged out successfully"
+        }
+
+        ................................................................................
+
+        Endpoint:    GET /api/auth/me
+        Description: Get current logged-in user profile.
+        Auth:        Required (httpOnly Cookie)
+        Response:
+        {
+          "success": true,
+          "user": {
+            "id": "uuid...",
+            "email": "...",
+            "name": "...",
+            "avatarUrl": "...",
+            "createdAt": "..."
+          }
+        }
+
+    }
+
+}
