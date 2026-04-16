@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  name       String
+  avatarUrl  String?
+  createdAt  DateTime @default(now())
+  
+  // Relations
+  ownedRooms  Room[]       @relation("RoomOwner")
+  roomMembers RoomMember[]
+  messages    Message[]
+}
+
+model Room {
+  id        String   @id @default(uuid())
+  slug      String   @unique
+  name      String
+  ownerId   String
+  isPublic  Boolean  @default(false)
+  
+  // Relations
+  owner     User         @relation("RoomOwner", fields: [ownerId], references: [id])
+  members   RoomMember[]
+  widgets   Widget[]
+  messages  Message[]
+}
+
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model RoomMember {
+  id      String @id @default(uuid())
+  userId  String
+  roomId  String
+  role    Role   @default(VIEWER)
+
+  // Relations
+  user    User   @relation(fields: [userId], references: [id])
+  room    Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roomId])
+}
+
+enum WidgetType {
+  IMAGE
+  VIDEO
+  YOUTUBE
+  STICKER
+}
+
+model Widget {
+  id      String     @id @default(uuid())
+  roomId  String
+  type    WidgetType
+  x       Float
+  y       Float
+  z       Int        @default(0)
+  data    Json?
+
+  // Relations
+  room    Room       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  roomId    String
+  senderId  String
+  content   String
+  timestamp DateTime @default(now())
+
+  // Relations
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender    User     @relation(fields: [senderId], references: [id])
+}
