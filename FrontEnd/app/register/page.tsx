@@ -29,8 +29,12 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      await register(formData);
-      router.push("/");
+      // Clean up payload: remove empty avatarUrl
+      const { avatarUrl, ...rest } = formData;
+      const payload = avatarUrl ? formData : rest;
+
+      await register(payload);
+      router.push("/login");
     } catch (err: any) {
       setError(err.message || "Failed to register");
     } finally {
@@ -86,6 +90,7 @@ export default function RegisterPage() {
               onChange={handleChange}
               icon={<Lock size={18} />}
               required
+              minLength={6}
             />
             <Input
               label="Avatar URL (Optional)"
