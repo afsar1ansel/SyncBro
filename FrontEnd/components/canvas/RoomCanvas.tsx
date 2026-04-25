@@ -168,13 +168,14 @@ export function RoomCanvas({
       })}
 
       {/* Screen Share Widgets — rendered in world space */}
-      {mappedStreams.map(({ trackReference, widget }) => {
+      {mappedStreams.map(({ trackReference, audioTrack, widget }) => {
         if (!widget) return null;
         return (
           <StreamWidget
             key={widget.id}
             widget={widget}
             trackReference={trackReference}
+            audioTrack={audioTrack}
             onMove={moveWidget}
             onFocus={focusWidget}
             onRemove={removeWidget}

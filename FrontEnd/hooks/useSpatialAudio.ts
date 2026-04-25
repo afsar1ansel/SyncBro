@@ -29,9 +29,9 @@ export function useSpatialAudio(
       const multiplier = volumeMultipliers[participant.identity] ?? 1;
       const finalVolume = spatialVolume * multiplier;
 
-      // Apply volume to all audio tracks of this participant
+      // Apply volume only to Microphone tracks
       participant.audioTrackPublications.forEach((pub) => {
-        if (pub.track && pub.kind === Track.Kind.Audio) {
+        if (pub.track && pub.kind === Track.Kind.Audio && pub.source === Track.Source.Microphone) {
           (pub.track as any).setVolume(finalVolume);
         }
       });

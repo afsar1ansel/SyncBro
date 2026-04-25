@@ -6,19 +6,21 @@ import { useCanvas } from "@/context/CanvasContext";
 import { VideoTrack } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-react";
 import type { WidgetData } from "@/hooks/useWidgets";
-import { Maximize2, Monitor, X } from "lucide-react";
+import { Maximize2, Monitor, X, Volume2, VolumeX } from "lucide-react";
 
 interface StreamWidgetProps {
   widget: WidgetData;
   trackReference: TrackReference;
+  audioTrack?: TrackReference;
   onMove: (widgetId: string, x: number, y: number, w: number, h: number) => void;
   onFocus: (widgetId: string) => void;
   onRemove: (widgetId: string) => void;
 }
 
-export function StreamWidget({ widget, trackReference, onMove, onFocus, onRemove }: StreamWidgetProps) {
+export function StreamWidget({ widget, trackReference, audioTrack, onMove, onFocus, onRemove }: StreamWidgetProps) {
   const { zoom } = useCanvas();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [volume, setVolume] = React.useState(1);
 
   const isDragging = useRef(false);
   const isResizing = useRef(false);
@@ -127,6 +129,14 @@ export function StreamWidget({ widget, trackReference, onMove, onFocus, onRemove
     }
   };
 
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVol = parseFloat(e.target.value);
+    setVolume(newVol);
+    if (audioTrack?.publication?.track) {
+      (audioTrack.publication.track as any).setVolume(newVol);
+    }
+  };
+
   return (
     <motion.div
       ref={containerRef}
@@ -163,6 +173,25 @@ export function StreamWidget({ widget, trackReference, onMove, onFocus, onRemove
           <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2 select-none">
             <Monitor size={12} className="text-blue-500" />
             {trackReference.participant.name || "Anonymous"}'s Screen
+            {audioTrack ? (
+              <div 
+                className="flex items-center gap-2 ml-2 bg-black/40 px-2 py-0.5 rounded-full border border-white/5 pointer-events-auto"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <Volume2 size={10} className="text-green-500" />
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="1" 
+                  step="0.05" 
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  className="w-12 h-1 accent-green-500 cursor-pointer"
+                />
+              </div>
+            ) : (
+              <VolumeX size={10} className="text-zinc-600" />
+            )}
           </span>
           
           <div className="ml-auto flex items-center gap-1">

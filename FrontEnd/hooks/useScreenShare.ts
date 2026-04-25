@@ -10,15 +10,18 @@ export function useScreenShare(widgets: WidgetData[]) {
   const { localParticipant } = useLocalParticipant();
   const [isScreenSharing, setIsScreenSharing] = useState(false);
 
-  // Find remote screen share tracks and match them to widgets
-  const screenTracks = useTracks([Track.Source.ScreenShare], { onlySubscribed: true });
+  // Find remote screen share tracks (video and audio) and match them to widgets
+  const screenTracks = useTracks(
+    [Track.Source.ScreenShare, Track.Source.ScreenShareAudio], 
+    { onlySubscribed: true }
+  );
 
   const toggleScreenShare = useCallback(async () => {
     if (!localParticipant) return;
 
     try {
       const nextState = !localParticipant.isScreenShareEnabled;
-      await localParticipant.setScreenShareEnabled(nextState);
+      await localParticipant.setScreenShareEnabled(nextState, { audio: true });
       setIsScreenSharing(nextState);
 
       if (nextState) {
@@ -46,16 +49,23 @@ export function useScreenShare(widgets: WidgetData[]) {
   }, [isScreenSharing]);
 
   // Map tracks to their corresponding widgets
-  const mappedStreams = screenTracks.map((trackReference) => {
-    const participantIdentity = trackReference.participant.identity;
+  // We group by participant identity since a participant shares both video and audio
+  const participantsSharing = Array.from(new Set(screenTracks.map(t => t.participant.identity)));
+  
+  const mappedStreams = participantsSharing.map((identity) => {
+    const videoTrack = screenTracks.find(t => t.participant.identity === identity && t.source === Track.Source.ScreenShare);
+    const audioTrack = screenTracks.find(t => t.participant.identity === identity && t.source === Track.Source.ScreenShareAudio);
+    
     const widget = widgets.find(
-      (w) => w.type === "SCREENSHARE" && (w.data as any)?.participantIdentity === participantIdentity
+      (w) => w.type === "SCREENSHARE" && (w.data as any)?.participantIdentity === identity
     );
+
     return {
-      trackReference,
+      trackReference: videoTrack!, // The primary track for the widget is video
+      audioTrack,
       widget,
     };
-  });
+  }).filter(item => item.trackReference !== undefined);
 
   return {
     isScreenSharing,
