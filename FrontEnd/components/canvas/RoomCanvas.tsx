@@ -8,7 +8,7 @@ import { GhostCursor } from "./GhostCursor";
 import { Widget } from "./Widget";
 import { VoiceOrb } from "../voice/VoiceOrb";
 import { VoiceBar } from "../voice/VoiceBar";
-import { useRemoteParticipants } from "@livekit/components-react";
+import { useRemoteParticipants, RoomAudioRenderer } from "@livekit/components-react";
 import { useSpatialAudio } from "@/hooks/useSpatialAudio";
 
 interface RoomCanvasProps {
@@ -85,6 +85,7 @@ function VoiceLayer({
         );
       })}
       {onLeaveVoice && <VoiceBar onLeave={onLeaveVoice} />}
+      <RoomAudioRenderer />
     </>
   );
 }
