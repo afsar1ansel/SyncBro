@@ -20,10 +20,6 @@ interface RoomCanvasProps {
 export function RoomCanvas({ roomId, isVoiceActive, onLeaveVoice }: RoomCanvasProps) {
   const otherCursors = useCursors(roomId);
   const { widgets, placeWidget, moveWidget, focusWidget } = useWidgets(roomId);
-  const remoteParticipants = useRemoteParticipants();
-
-  // Enable spatial audio
-  useSpatialAudio(remoteParticipants, otherCursors);
 
   const handleCanvasClick = (worldX: number, worldY: number) => {
     // Center the widget on the click point
@@ -42,19 +38,10 @@ export function RoomCanvas({ roomId, isVoiceActive, onLeaveVoice }: RoomCanvasPr
         />
       ))}
 
-      {/* Voice Orbs — rendered in world space at participant cursor positions */}
-      {isVoiceActive && remoteParticipants.map((p) => {
-        const cursor = otherCursors.find(c => c.userId === p.identity);
-        if (!cursor) return null;
-        return (
-          <VoiceOrb 
-            key={p.sid} 
-            participant={p} 
-            x={cursor.x} 
-            y={cursor.y} 
-          />
-        );
-      })}
+      {/* Voice Layer — only rendered when voice is active and inside LiveKitRoom */}
+      {isVoiceActive && (
+        <VoiceLayer otherCursors={otherCursors} onLeaveVoice={onLeaveVoice} />
+      )}
 
       {/* Other users' ghost cursors — also in world space */}
       {otherCursors.map((cursor) => (
@@ -66,9 +53,38 @@ export function RoomCanvas({ roomId, isVoiceActive, onLeaveVoice }: RoomCanvasPr
           y={cursor.y}
         />
       ))}
-
-      {/* Voice controls */}
-      {isVoiceActive && onLeaveVoice && <VoiceBar onLeave={onLeaveVoice} />}
     </InfiniteCanvas>
+  );
+}
+
+// Separate component to safely use LiveKit hooks only when in a Room context
+function VoiceLayer({ 
+  otherCursors, 
+  onLeaveVoice 
+}: { 
+  otherCursors: any[], 
+  onLeaveVoice?: () => void 
+}) {
+  const remoteParticipants = useRemoteParticipants();
+  
+  // Enable spatial audio
+  useSpatialAudio(remoteParticipants, otherCursors);
+
+  return (
+    <>
+      {remoteParticipants.map((p) => {
+        const cursor = otherCursors.find((c) => c.userId === p.identity);
+        if (!cursor) return null;
+        return (
+          <VoiceOrb
+            key={p.sid}
+            participant={p}
+            x={cursor.x}
+            y={cursor.y}
+          />
+        );
+      })}
+      {onLeaveVoice && <VoiceBar onLeave={onLeaveVoice} />}
+    </>
   );
 }
