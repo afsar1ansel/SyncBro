@@ -100,9 +100,10 @@ export default function RoomPage({ params }: RoomPageProps) {
 
     socketService.connect();
 
-    const onRoomJoined = ({ roomId, role }: { roomId: string; role: string }) => {
+    const onRoomJoined = ({ roomId, role, onlineCount: count }: { roomId: string; role: string; onlineCount?: number }) => {
       console.log(`✅ Joined room ${roomId} as ${role}`);
       setSocketStatus("joined");
+      if (count) setOnlineCount(count);
       setLoading(false);
     };
 
@@ -112,12 +113,20 @@ export default function RoomPage({ params }: RoomPageProps) {
       setLoading(false);
     };
 
-    const onUserJoined = () => {
-      setOnlineCount((c) => c + 1);
+    const onUserJoined = ({ onlineCount: count }: { onlineCount?: number }) => {
+      if (count) {
+        setOnlineCount(count);
+      } else {
+        setOnlineCount((c) => c + 1);
+      }
     };
 
-    const onUserLeft = () => {
-      setOnlineCount((c) => Math.max(1, c - 1));
+    const onUserLeft = ({ onlineCount: count }: { onlineCount?: number }) => {
+      if (count) {
+        setOnlineCount(count);
+      } else {
+        setOnlineCount((c) => Math.max(1, c - 1));
+      }
     };
 
     socket.on("room-joined", onRoomJoined);
