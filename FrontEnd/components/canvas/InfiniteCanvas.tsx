@@ -16,18 +16,22 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
   const { panOffset, zoom, setPanOffset, setZoom, screenToWorld } = useCanvas();
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const isPanning = useRef(false);
+  const [isPanning, setIsPanning] = React.useState(false);
+  const isPanningRef = useRef(false);
+  const [isSpaceHeld, setIsSpaceHeld] = React.useState(false);
   const lastMouse = useRef({ x: 0, y: 0 });
-  const didPan = useRef(false); // tracks if we actually moved while panning
+  const didPan = useRef(false);
 
-  // ── Pan: Middle-click drag OR Space + left-click drag ──────────────────
+  // ── Pan: Middle-click, Space+drag, OR Left-click drag on background ───
   const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const isMiddleClick = e.button === 1;
     const isSpacePan = e.button === 0 && e.currentTarget.dataset.spaceheld === "true";
+    const isLeftClickBackground = e.button === 0 && e.target === containerRef.current;
 
-    if (isMiddleClick || isSpacePan) {
+    if (isMiddleClick || isSpacePan || isLeftClickBackground) {
       e.preventDefault();
-      isPanning.current = true;
+      isPanningRef.current = true;
+      setIsPanning(true);
       didPan.current = false;
       lastMouse.current = { x: e.clientX, y: e.clientY };
     }
@@ -35,7 +39,7 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
 
   const onMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isPanning.current) return;
+      if (!isPanningRef.current) return;
       const dx = e.clientX - lastMouse.current.x;
       const dy = e.clientY - lastMouse.current.y;
       if (Math.abs(dx) > 1 || Math.abs(dy) > 1) didPan.current = true;
@@ -47,8 +51,9 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
 
   const onMouseUp = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (isPanning.current) {
-        isPanning.current = false;
+      if (isPanningRef.current) {
+        isPanningRef.current = false;
+        setIsPanning(false);
         return; // don't treat a pan-release as a click
       }
 
@@ -103,16 +108,18 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
+        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
         e.preventDefault();
         el.dataset.spaceheld = "true";
-        el.style.cursor = "grab";
+        setIsSpaceHeld(true);
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         el.dataset.spaceheld = "false";
-        el.style.cursor = "crosshair";
-        isPanning.current = false;
+        setIsSpaceHeld(false);
+        isPanningRef.current = false;
+        setIsPanning(false);
       }
     };
 
@@ -128,11 +135,16 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
     <div
       ref={containerRef}
       className="relative w-full h-full overflow-hidden bg-zinc-950 select-none"
-      style={{ cursor: "crosshair" }}
+      style={{ 
+        cursor: isPanning ? "grabbing" : isSpaceHeld ? "grab" : "crosshair" 
+      }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
-      onMouseLeave={() => { isPanning.current = false; }}
+      onMouseLeave={() => { 
+        isPanningRef.current = false;
+        setIsPanning(false);
+      }}
     >
       {/* Dot-grid background that moves with pan/zoom */}
       <div

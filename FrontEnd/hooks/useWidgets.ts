@@ -10,6 +10,8 @@ export interface WidgetData {
   x: number;
   y: number;
   z: number;
+  width: number;
+  height: number;
   data?: { label?: string } | null;
 }
 
@@ -21,12 +23,12 @@ export function useWidgets(roomId: string) {
     socketService.getSocket().emit("widget-placed", { x, y });
   }, []);
 
-  // Move a widget (called during drag)
-  const moveWidget = useCallback((widgetId: string, x: number, y: number) => {
-    socketService.getSocket().emit("widget-moved", { widgetId, x, y });
+  // Move or Resize a widget
+  const moveWidget = useCallback((widgetId: string, x: number, y: number, width: number, height: number) => {
+    socketService.getSocket().emit("widget-moved", { widgetId, x, y, width, height });
     // Optimistic update — apply locally immediately
     setWidgets((prev) =>
-      prev.map((w) => (w.id === widgetId ? { ...w, x, y } : w))
+      prev.map((w) => (w.id === widgetId ? { ...w, x, y, width, height } : w))
     );
   }, []);
 
@@ -52,10 +54,10 @@ export function useWidgets(roomId: string) {
       });
     };
 
-    // A widget was moved by another user
-    const onWidgetMoved = ({ widgetId, x, y }: { widgetId: string; x: number; y: number }) => {
+    // A widget was moved or resized by another user
+    const onWidgetMoved = ({ widgetId, x, y, width, height }: { widgetId: string; x: number; y: number; width: number; height: number }) => {
       setWidgets((prev) =>
-        prev.map((w) => (w.id === widgetId ? { ...w, x, y } : w))
+        prev.map((w) => (w.id === widgetId ? { ...w, x, y, width, height } : w))
       );
     };
 
