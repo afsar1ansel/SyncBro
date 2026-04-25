@@ -7,7 +7,9 @@ import { api } from "@/lib/api";
 import { socketService } from "@/lib/socket";
 import { CanvasProvider } from "@/context/CanvasContext";
 import { RoomCanvas } from "@/components/canvas/RoomCanvas";
-import { Loader2, Users, ArrowLeft, Share, Copy, Check } from "lucide-react";
+import { ChatPanel } from "@/components/chat/ChatPanel";
+import { useChat } from "@/hooks/useChat";
+import { Loader2, Users, ArrowLeft, Share, Check, MessageSquare } from "lucide-react";
 import Link from "next/link";
 
 interface Room {
@@ -33,7 +35,11 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [onlineCount, setOnlineCount] = useState(1);
   const [copied, setCopied] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const socketRef = useRef(socketService.getSocket());
+
+  // Chat hook
+  const { messages, sendMessage, typingUsers, handleTyping } = useChat(room?.id);
 
   const handleCopyInvite = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -186,6 +192,18 @@ export default function RoomPage({ params }: RoomPageProps) {
           >
             {socketStatus === "joined" ? "Live" : socketStatus === "error" ? "Error" : "Connecting"}
           </div>
+
+          {/* Chat Toggle Button */}
+          <button
+            onClick={() => setIsChatOpen((prev) => !prev)}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isChatOpen
+                ? "bg-blue-500/20 text-blue-400"
+                : "text-zinc-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            <MessageSquare size={18} />
+          </button>
         </div>
       </header>
 
@@ -195,6 +213,16 @@ export default function RoomPage({ params }: RoomPageProps) {
           {room && <RoomCanvas roomId={room.id} />}
         </CanvasProvider>
       </main>
+
+      {/* Chat Panel */}
+      <ChatPanel
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        messages={messages}
+        sendMessage={sendMessage}
+        typingUsers={typingUsers}
+        handleTyping={handleTyping}
+      />
     </div>
   );
 }
