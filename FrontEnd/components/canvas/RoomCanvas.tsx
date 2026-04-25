@@ -10,6 +10,7 @@ import { VoiceOrb } from "../voice/VoiceOrb";
 import { VoiceBar } from "../voice/VoiceBar";
 import { useRemoteParticipants, RoomAudioRenderer } from "@livekit/components-react";
 import { useSpatialAudio } from "@/hooks/useSpatialAudio";
+import { MousePointer2, Square, StickyNote } from "lucide-react";
 
 interface RoomCanvasProps {
   roomId: string;
@@ -19,15 +20,58 @@ interface RoomCanvasProps {
 
 export function RoomCanvas({ roomId, isVoiceActive, onLeaveVoice }: RoomCanvasProps) {
   const otherCursors = useCursors(roomId);
-  const { widgets, placeWidget, moveWidget, focusWidget } = useWidgets(roomId);
+  const { widgets, placeWidget, moveWidget, focusWidget, updateWidgetData } = useWidgets(roomId);
+  const [activeTool, setActiveTool] = React.useState<"select" | "box" | "sticky">("select");
 
   const handleCanvasClick = (worldX: number, worldY: number) => {
-    // Center the widget on the click point
-    placeWidget(worldX - 80, worldY - 50);
+    if (activeTool === "box") {
+      placeWidget(worldX - 100, worldY - 75, "STICKER", { label: "New Box" });
+    } else if (activeTool === "sticky") {
+      placeWidget(worldX - 125, worldY - 125, "STICKY", { text: "", color: "#fef08a" });
+    }
   };
 
   return (
-    <InfiniteCanvas onCanvasClick={handleCanvasClick}>
+    <InfiniteCanvas 
+      onCanvasClick={handleCanvasClick} 
+      activeTool={activeTool}
+      overlay={
+        <div className="absolute bottom-8 left-8 flex flex-col gap-4 pointer-events-none">
+          {/* Controls hint moved here to be part of the "text" in bottom left */}
+          <div className="flex flex-col gap-1 text-[10px] text-zinc-500 font-medium tracking-wide uppercase">
+            <span className="flex items-center gap-2">
+              <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">Scroll</span> Zoom
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">Space + Drag</span> Pan
+            </span>
+          </div>
+
+          {/* Floating Toolbar */}
+          <div className="flex flex-row gap-2 p-1.5 rounded-2xl bg-zinc-900/90 backdrop-blur-xl border border-white/10 shadow-2xl pointer-events-auto">
+            <ToolButton 
+              active={activeTool === "select"} 
+              onClick={() => setActiveTool("select")} 
+              icon={<MousePointer2 size={20} />} 
+              label="Select" 
+            />
+            <div className="w-px h-8 bg-white/5 my-auto" />
+            <ToolButton 
+              active={activeTool === "box"} 
+              onClick={() => setActiveTool("box")} 
+              icon={<Square size={20} />} 
+              label="Box" 
+            />
+            <ToolButton 
+              active={activeTool === "sticky"} 
+              onClick={() => setActiveTool("sticky")} 
+              icon={<StickyNote size={20} />} 
+              label="Sticky Note" 
+            />
+          </div>
+        </div>
+      }
+    >
       {/* Widgets — rendered in world space inside the transformed container */}
       {widgets.map((widget) => (
         <Widget
@@ -35,6 +79,7 @@ export function RoomCanvas({ roomId, isVoiceActive, onLeaveVoice }: RoomCanvasPr
           widget={widget}
           onMove={moveWidget}
           onFocus={focusWidget}
+          onUpdateData={updateWidgetData}
         />
       ))}
 
@@ -54,6 +99,22 @@ export function RoomCanvas({ roomId, isVoiceActive, onLeaveVoice }: RoomCanvasPr
         />
       ))}
     </InfiniteCanvas>
+  );
+}
+
+function ToolButton({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      className={`p-2.5 rounded-xl transition-all flex items-center justify-center ${
+        active 
+          ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
+          : "text-zinc-400 hover:text-white hover:bg-white/5"
+      }`}
+    >
+      {icon}
+    </button>
   );
 }
 

@@ -5,14 +5,16 @@ import { useCanvas } from "@/context/CanvasContext";
 
 interface InfiniteCanvasProps {
   children?: ReactNode;
+  overlay?: ReactNode;
   onCanvasClick?: (worldX: number, worldY: number) => void;
+  activeTool?: "select" | "box" | "sticky";
 }
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 4;
 const ZOOM_SENSITIVITY = 0.001;
 
-export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps) {
+export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = "select" }: InfiniteCanvasProps) {
   const { panOffset, zoom, setPanOffset, setZoom, screenToWorld, setLocalWorldPos } = useCanvas();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -153,7 +155,13 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
       ref={containerRef}
       className="relative w-full h-full overflow-hidden bg-zinc-950 select-none"
       style={{ 
-        cursor: isPanning ? "grabbing" : isSpaceHeld ? "grab" : "crosshair" 
+        cursor: isPanning 
+          ? "grabbing" 
+          : isSpaceHeld 
+            ? "grab" 
+            : activeTool === "select" 
+              ? "default" 
+              : "crosshair" 
       }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
@@ -188,18 +196,16 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
         {children}
       </div>
 
+      {/* Overlay – fixed UI elements that don't move with pan/zoom */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="pointer-events-auto">
+          {overlay}
+        </div>
+      </div>
+
       {/* Zoom indicator */}
       <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-lg bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-400 font-mono pointer-events-none select-none backdrop-blur-sm">
         {Math.round(zoom * 100)}%
-      </div>
-
-      {/* Controls hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-3 text-[10px] text-zinc-600 pointer-events-none select-none">
-        <span>Scroll to zoom</span>
-        <span>·</span>
-        <span>Middle-click drag to pan</span>
-        <span>·</span>
-        <span>Space + drag to pan</span>
       </div>
     </div>
   );

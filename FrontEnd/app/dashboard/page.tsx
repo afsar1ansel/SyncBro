@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
-import { Plus, Layout, Users, ChevronRight, Loader2 } from "lucide-react";
+import { Plus, Layout, Users, ChevronRight, Loader2, Trash2 } from "lucide-react";
 
 interface Room {
   id: string;
@@ -57,6 +57,20 @@ export default function Dashboard() {
       console.error("Failed to create room:", error);
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDeleteRoom = async (roomId: string) => {
+    if (!window.confirm("Are you sure you want to delete this room? This action cannot be undone.")) return;
+
+    try {
+      const data = await api.delete<{ success: boolean }>(`/api/rooms/${roomId}`);
+      if (data.success) {
+        setRooms(rooms.filter(r => r.id !== roomId));
+      }
+    } catch (error) {
+      console.error("Failed to delete room:", error);
+      alert("Failed to delete room. Please try again.");
     }
   };
 
@@ -142,6 +156,19 @@ export default function Dashboard() {
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${room.isPublic ? 'bg-green-500/10 text-green-400' : 'bg-zinc-800 text-zinc-500'}`}>
                       {room.isPublic ? 'Public' : 'Private'}
                     </span>
+                    
+                    {room.ownerId === user.id && (
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDeleteRoom(room.id);
+                        }}
+                        className="p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Delete Room"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
                   <h3 className="text-xl font-bold text-white mb-1">{room.name}</h3>
                   <p className="text-xs text-zinc-500 font-mono mb-4">/room/{room.slug}</p>

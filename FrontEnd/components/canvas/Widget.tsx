@@ -9,9 +9,10 @@ interface WidgetProps {
   widget: WidgetData;
   onMove: (widgetId: string, x: number, y: number, w: number, h: number) => void;
   onFocus: (widgetId: string) => void;
+  onUpdateData: (widgetId: string, data: any) => void;
 }
 
-export function Widget({ widget, onMove, onFocus }: WidgetProps) {
+export function Widget({ widget, onMove, onFocus, onUpdateData }: WidgetProps) {
   const { zoom } = useCanvas();
 
   const isDragging = useRef(false);
@@ -24,6 +25,9 @@ export function Widget({ widget, onMove, onFocus }: WidgetProps) {
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button !== 0) return;
+      // Don't drag if we're interacting with the textarea
+      if ((e.target as HTMLElement).tagName === "TEXTAREA") return;
+      
       e.stopPropagation();
       e.preventDefault();
 
@@ -160,10 +164,26 @@ export function Widget({ widget, onMove, onFocus }: WidgetProps) {
         </div>
 
         {/* Widget body */}
-        <div className="flex-1 flex items-center justify-center p-3">
-          <span className="text-xs font-medium text-zinc-400">
-            {(widget.data as any)?.label ?? "Box"}
-          </span>
+        <div className="flex-1 flex flex-col p-0 overflow-hidden">
+          {widget.type === "STICKY" ? (
+            <textarea
+              value={(widget.data as any)?.text ?? ""}
+              onChange={(e) => onUpdateData(widget.id, { text: e.target.value })}
+              onFocus={() => onFocus(widget.id)}
+              placeholder="Type something..."
+              className="w-full h-full p-4 bg-transparent resize-none focus:outline-none text-sm text-zinc-200 placeholder:text-zinc-600 leading-relaxed scrollbar-hide"
+              style={{ 
+                color: (widget.data as any)?.color || "#fef08a",
+                fontFamily: "'Inter', sans-serif"
+              }}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-3">
+              <span className="text-xs font-medium text-zinc-400">
+                {(widget.data as any)?.label ?? "Box"}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Resize Handles */}

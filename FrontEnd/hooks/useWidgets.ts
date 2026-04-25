@@ -19,8 +19,16 @@ export function useWidgets(roomId: string) {
   const [widgets, setWidgets] = useState<WidgetData[]>([]);
 
   // Place a new widget at world coordinates
-  const placeWidget = useCallback((x: number, y: number) => {
-    socketService.getSocket().emit("widget-placed", { x, y });
+  const placeWidget = useCallback((x: number, y: number, type: string = "STICKER", data: any = null) => {
+    socketService.getSocket().emit("widget-placed", { x, y, type, data });
+  }, []);
+
+  // Update specific data of a widget (like text in a sticky)
+  const updateWidgetData = useCallback((widgetId: string, data: any) => {
+    socketService.getSocket().emit("widget-data-updated", { widgetId, data });
+    setWidgets((prev) =>
+      prev.map((w) => (w.id === widgetId ? { ...w, data: { ...w.data, ...data } } : w))
+    );
   }, []);
 
   // Move or Resize a widget
@@ -68,18 +76,27 @@ export function useWidgets(roomId: string) {
       );
     };
 
+    // A widget's data was updated
+    const onWidgetDataUpdated = ({ widgetId, data }: { widgetId: string; data: any }) => {
+      setWidgets((prev) =>
+        prev.map((w) => (w.id === widgetId ? { ...w, data: { ...w.data, ...data } } : w))
+      );
+    };
+
     socket.on("room-joined", onRoomJoined);
     socket.on("widget-added", onWidgetAdded);
     socket.on("widget-moved", onWidgetMoved);
     socket.on("widget-focused", onWidgetFocused);
+    socket.on("widget-data-updated", onWidgetDataUpdated);
 
     return () => {
       socket.off("room-joined", onRoomJoined);
       socket.off("widget-added", onWidgetAdded);
       socket.off("widget-moved", onWidgetMoved);
       socket.off("widget-focused", onWidgetFocused);
+      socket.off("widget-data-updated", onWidgetDataUpdated);
     };
   }, [roomId]);
 
-  return { widgets, placeWidget, moveWidget, focusWidget };
+  return { widgets, placeWidget, moveWidget, focusWidget, updateWidgetData };
 }
