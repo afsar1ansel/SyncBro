@@ -9,7 +9,10 @@ import { CanvasProvider } from "@/context/CanvasContext";
 import { RoomCanvas } from "@/components/canvas/RoomCanvas";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { useChat } from "@/hooks/useChat";
-import { Loader2, Users, ArrowLeft, Share, Check, MessageSquare } from "lucide-react";
+import { useVoice } from "@/hooks/useVoice";
+import { Loader2, Users, ArrowLeft, Share, Check, MessageSquare, Mic } from "lucide-react";
+import { LiveKitRoom } from "@livekit/components-react";
+import "@livekit/components-styles";
 import Link from "next/link";
 
 interface Room {
@@ -40,6 +43,9 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   // Chat hook
   const { messages, sendMessage, typingUsers, handleTyping } = useChat(room?.id);
+  
+  // Voice hook
+  const { token, serverUrl, isJoined, joinVoice, leaveVoice } = useVoice(room?.id);
 
   const handleCopyInvite = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -180,6 +186,18 @@ export default function RoomPage({ params }: RoomPageProps) {
             {copied ? "Copied!" : "Invite Friends"}
           </button>
 
+          <button
+            onClick={isJoined ? leaveVoice : joinVoice}
+            className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+              isJoined 
+                ? "bg-red-500/20 text-red-500 hover:bg-red-500/30" 
+                : "bg-zinc-800 text-white hover:bg-zinc-700"
+            }`}
+          >
+            <Mic size={14} />
+            {isJoined ? "Leave Voice" : "Join Voice"}
+          </button>
+
           {/* Socket status badge */}
           <div
             className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
@@ -210,7 +228,20 @@ export default function RoomPage({ params }: RoomPageProps) {
       {/* Canvas area */}
       <main className="flex-1 relative overflow-hidden">
         <CanvasProvider>
-          {room && <RoomCanvas roomId={room.id} />}
+          {token && serverUrl ? (
+            <LiveKitRoom
+              token={token}
+              serverUrl={serverUrl}
+              connect={true}
+              audio={true}
+              video={false}
+              className="w-full h-full"
+            >
+              {room && <RoomCanvas roomId={room.id} isVoiceActive={true} onLeaveVoice={leaveVoice} />}
+            </LiveKitRoom>
+          ) : (
+            room && <RoomCanvas roomId={room.id} isVoiceActive={false} />
+          )}
         </CanvasProvider>
       </main>
 

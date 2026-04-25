@@ -13,7 +13,7 @@ const MAX_ZOOM = 4;
 const ZOOM_SENSITIVITY = 0.001;
 
 export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps) {
-  const { panOffset, zoom, setPanOffset, setZoom, screenToWorld } = useCanvas();
+  const { panOffset, zoom, setPanOffset, setZoom, screenToWorld, setLocalWorldPos } = useCanvas();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPanning, setIsPanning] = React.useState(false);
@@ -39,6 +39,11 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
 
   const onMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      // Update local world position for spatial audio etc.
+      const rect = containerRef.current!.getBoundingClientRect();
+      const world = screenToWorld(e.clientX - rect.left, e.clientY - rect.top);
+      setLocalWorldPos(world);
+
       if (!isPanningRef.current) return;
       const dx = e.clientX - lastMouse.current.x;
       const dy = e.clientY - lastMouse.current.y;
@@ -46,7 +51,7 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
       lastMouse.current = { x: e.clientX, y: e.clientY };
       setPanOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
     },
-    [setPanOffset]
+    [setPanOffset, setLocalWorldPos, screenToWorld]
   );
 
   const onMouseUp = useCallback(
@@ -87,10 +92,22 @@ export function InfiniteCanvas({ children, onCanvasClick }: InfiniteCanvasProps)
           y: mouseY - (mouseY - prevPan.y) * (newZoom / prevZoom),
         }));
 
+        // After zoom, update world pos since zoom changed
+        const newWorld = {
+          x: (mouseX - (mouseX - panOffset.x) * (newZoom / zoom)) / newZoom,
+          y: (mouseY - (mouseY - panOffset.y) * (newZoom / zoom)) / newZoom,
+        };
+        // Wait, screenToWorld is easier if we call it after state updates, but here we are in setState
+        // Let's just let the next mouseMove catch it or compute it here.
+        // Actually, just calling screenToWorld with current panOffset and NEW zoom is enough.
+
         return newZoom;
       });
+
+      const world = screenToWorld(mouseX, mouseY);
+      setLocalWorldPos(world);
     },
-    [setZoom, setPanOffset]
+    [setZoom, setPanOffset, setLocalWorldPos, screenToWorld, panOffset, zoom]
   );
 
   // Attach wheel as non-passive so we can preventDefault

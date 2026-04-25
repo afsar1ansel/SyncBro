@@ -16,6 +16,8 @@ interface CanvasContextType {
   screenToWorld: (screenX: number, screenY: number) => { x: number; y: number };
   worldToScreen: (worldX: number, worldY: number) => { x: number; y: number };
   bringToFront: () => number;
+  localWorldPos: { x: number; y: number };
+  setLocalWorldPos: (pos: { x: number; y: number }) => void;
 }
 
 const CanvasContext = createContext<CanvasContextType | undefined>(undefined);
@@ -25,6 +27,7 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
   const [zoom, setZoom] = useState(1);
   const maxZRef = useRef(0);
   const [maxZ, setMaxZ] = useState(0);
+  const [localWorldPos, setLocalWorldPos] = useState({ x: 0, y: 0 });
 
   const screenToWorld = useCallback(
     (screenX: number, screenY: number) => ({
@@ -59,6 +62,8 @@ export function CanvasProvider({ children }: { children: React.ReactNode }) {
         screenToWorld,
         worldToScreen,
         bringToFront,
+        localWorldPos,
+        setLocalWorldPos,
       }}
     >
       {children}
