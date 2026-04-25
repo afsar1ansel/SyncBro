@@ -39,6 +39,7 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [onlineCount, setOnlineCount] = useState(1);
   const [copied, setCopied] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
   const socketRef = useRef(socketService.getSocket());
 
   // Chat hook
@@ -46,6 +47,22 @@ export default function RoomPage({ params }: RoomPageProps) {
   
   // Voice hook
   const { token, serverUrl, isJoined, joinVoice, leaveVoice } = useVoice(room?.id);
+
+  // Notification logic: track unread messages
+  const prevMsgCount = useRef(messages.length);
+  useEffect(() => {
+    if (!isChatOpen && messages.length > prevMsgCount.current) {
+      setHasUnread(true);
+    }
+    prevMsgCount.current = messages.length;
+  }, [messages.length, isChatOpen]);
+
+  // Clear unread when chat opens
+  useEffect(() => {
+    if (isChatOpen) {
+      setHasUnread(false);
+    }
+  }, [isChatOpen]);
 
   const handleCopyInvite = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -214,13 +231,19 @@ export default function RoomPage({ params }: RoomPageProps) {
           {/* Chat Toggle Button */}
           <button
             onClick={() => setIsChatOpen((prev) => !prev)}
-            className={`p-1.5 rounded-lg transition-colors ${
+            className={`p-1.5 rounded-lg transition-colors relative ${
               isChatOpen
                 ? "bg-blue-500/20 text-blue-400"
                 : "text-zinc-400 hover:text-white hover:bg-white/5"
             }`}
           >
             <MessageSquare size={18} />
+            {hasUnread && !isChatOpen && (
+              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+              </span>
+            )}
           </button>
         </div>
       </header>
