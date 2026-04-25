@@ -41,14 +41,18 @@ export const setupSocketHandlers = (io) => {
         socket.join(roomId);
         console.log(`🚪 User ${membership.user.name} joined room: ${roomId}`);
 
+        // Get current online count for this room
+        const roomSize = io.sockets.adapter.rooms.get(roomId)?.size || 1;
+
         // Load existing widgets and send to the joining user
         const widgets = await prisma.widget.findMany({ where: { roomId } });
 
-        socket.emit('room-joined', { roomId, role: membership.role, widgets });
+        socket.emit('room-joined', { roomId, role: membership.role, widgets, onlineCount: roomSize });
         socket.to(roomId).emit('user-joined', {
           userId,
           name: membership.user.name,
-          avatarUrl: membership.user.avatarUrl
+          avatarUrl: membership.user.avatarUrl,
+          onlineCount: roomSize // Optional: sync exactly
         });
       } catch (error) {
         console.error('Error joining room:', error);
@@ -178,7 +182,8 @@ export const setupSocketHandlers = (io) => {
     socket.on('disconnect', () => {
       const roomId = socket.data.roomId;
       if (roomId) {
-        socket.to(roomId).emit('user-left', { userId });
+        const roomSize = io.sockets.adapter.rooms.get(roomId)?.size || 0;
+        socket.to(roomId).emit('user-left', { userId, onlineCount: roomSize });
       }
       console.log(`👤 User disconnected: ${userId} (Socket: ${socket.id})`);
     });
