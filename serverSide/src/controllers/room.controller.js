@@ -1,0 +1,101 @@
+import prisma from '../config/prisma.js';
+import { v4 as uuidv4 } from 'uuid';
+
+export const createRoom = async (req, res, next) => {
+  try {
+    const { name, isPublic } = req.body;
+    const userId = req.user.id;
+
+    // Generate a simple slug from the name + short uuid
+    const slug = `${name.toLowerCase().replace(/ /g, '-')}-${uuidv4().substring(0, 8)}`;
+
+    const room = await prisma.room.create({
+      data: {
+        name,
+        slug,
+        isPublic: !!isPublic,
+        ownerId: userId,
+        members: {
+          create: {
+            userId,
+            role: 'OWNER',
+          },
+        },
+      },
+      include: {
+        members: true,
+      },
+    });
+
+    res.status(201).json({ success: true, room });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMyRooms = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const rooms = await prisma.room.findMany({
+      where: {
+        OR: [
+          { members: { some: { userId } } },
+          { isPublic: true },
+        ],
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    res.status(200).json({ success: true, rooms });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getRoomBySlug = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const userId = req.user.id;
+
+    let room = await prisma.room.findUnique({
+      where: { slug },
+      include: {
+        members: {
+          where: { userId },
+        },
+      },
+    });
+
+    if (!room) {
+      return res.status(404).json({ success: false, message: 'Room not found' });
+    }
+
+    // Link-only access: If user is not a member, auto-join them as a VIEWER
+    if (room.members.length === 0) {
+      await prisma.roomMember.create({
+        data: {
+          userId,
+          roomId: room.id,
+          role: 'VIEWER',
+        },
+      });
+      
+      // Re-fetch to include the new membership
+      room = await prisma.room.findUnique({
+        where: { slug },
+        include: {
+          members: {
+            where: { userId },
+          },
+        },
+      });
+    }
+
+    res.status(200).json({ success: true, room });
+  } catch (error) {
+    next(error);
+  }
+};

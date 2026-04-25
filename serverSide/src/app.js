@@ -6,6 +6,7 @@ import { config } from './config/index.js';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware.js';
 import healthRoutes from './routes/health.routes.js';
 import authRoutes from './routes/auth.routes.js';
+import roomRoutes from './routes/room.routes.js';
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use(morgan('dev'));
 // Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/rooms', roomRoutes);
 
 // 404 Handler
 app.use(notFoundHandler);
