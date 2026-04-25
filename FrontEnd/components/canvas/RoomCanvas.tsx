@@ -33,6 +33,27 @@ export function RoomCanvas({
   const { widgets, placeWidget, moveWidget, focusWidget, updateWidgetData, removeWidget } = useWidgets(roomId);
   const [activeTool, setActiveTool] = React.useState<"select" | "box" | "sticky">("select");
 
+  const remoteParticipants = useRemoteParticipants();
+  const { localParticipant } = useLocalParticipant();
+  const { isScreenSharing, toggleScreenShare, mappedStreams } = useScreenShare(widgets);
+
+  // Sync mic state with LiveKit local participant
+  useEffect(() => {
+    const syncMic = async () => {
+      if (localParticipant) {
+        try {
+          await localParticipant.setMicrophoneEnabled(isMicEnabled);
+        } catch (err) {
+          console.error("Failed to sync mic state:", err);
+        }
+      }
+    };
+    syncMic();
+  }, [isMicEnabled, localParticipant]);
+
+  // Enable spatial audio
+  useSpatialAudio(remoteParticipants, otherCursors);
+
   const handleCanvasClick = (worldX: number, worldY: number) => {
     if (activeTool === "box") {
       placeWidget(worldX - 100, worldY - 75, "STICKER", { label: "New Box" });
@@ -85,30 +106,37 @@ export function RoomCanvas({
             {/* Divider */}
             <div className="w-px h-8 bg-white/10 mx-1" />
 
-            {/* LiveKit / Media Section */}
-            <LiveKitLayer 
-              roomId={roomId}
-              widgets={widgets}
-              otherCursors={otherCursors}
-              moveWidget={moveWidget}
-              focusWidget={focusWidget}
-              isMicEnabled={isMicEnabled}
-              onToggleMic={onToggleMic}
-              participantVolumes={participantVolumes}
-              onUpdateVolume={onUpdateVolume}
-            />
+            {/* Media Controls */}
+            <div className="flex items-center gap-1.5 px-1">
+              <ToolButton
+                active={true}
+                onClick={onToggleMic}
+                icon={isMicEnabled ? <Mic size={20} /> : <MicOff size={20} />}
+                label={isMicEnabled ? "Mute Mic" : "Unmute Mic"}
+                danger={!isMicEnabled}
+                success={isMicEnabled}
+              />
+              <ToolButton
+                active={isScreenSharing}
+                onClick={toggleScreenShare}
+                icon={isScreenSharing ? <MonitorOff size={20} /> : <MonitorUp size={20} />}
+                label={isScreenSharing ? "Stop Sharing" : "Share Screen"}
+                success={isScreenSharing}
+              />
+            </div>
           </div>
         </div>
       }
     >
       {/* Widgets — rendered in world space inside the transformed container */}
-      {widgets.map((widget) => (
+      {widgets.filter(w => w.type !== "SCREENSHARE").map((widget) => (
         <Widget
           key={widget.id}
           widget={widget}
           onMove={moveWidget}
           onFocus={focusWidget}
           onUpdateData={updateWidgetData}
+          onRemove={removeWidget}
         />
       ))}
 
@@ -122,6 +150,39 @@ export function RoomCanvas({
           y={cursor.y}
         />
       ))}
+
+      {/* Voice Orbs — rendered in world space */}
+      {remoteParticipants.map((p) => {
+        const cursor = otherCursors.find((c) => c.userId === p.identity);
+        if (!cursor) return null;
+        return (
+          <VoiceOrb
+            key={p.sid}
+            participant={p}
+            x={cursor.x}
+            y={cursor.y}
+            volume={participantVolumes[p.identity] ?? 1}
+            onVolumeChange={(v) => onUpdateVolume(p.identity, v)}
+          />
+        );
+      })}
+
+      {/* Screen Share Widgets — rendered in world space */}
+      {mappedStreams.map(({ trackReference, widget }) => {
+        if (!widget) return null;
+        return (
+          <StreamWidget
+            key={widget.id}
+            widget={widget}
+            trackReference={trackReference}
+            onMove={moveWidget}
+            onFocus={focusWidget}
+            onRemove={removeWidget}
+          />
+        );
+      })}
+
+      <RoomAudioRenderer />
     </InfiniteCanvas>
   );
 }
@@ -164,101 +225,3 @@ function ToolButton({
   );
 }
 
-// Refactored to handle both voice and screenshare
-function LiveKitLayer({ 
-  roomId,
-  widgets,
-  otherCursors,
-  moveWidget,
-  focusWidget,
-  isMicEnabled,
-  onToggleMic,
-  participantVolumes,
-  onUpdateVolume
-}: { 
-  roomId: string;
-  widgets: any[];
-  otherCursors: any[];
-  moveWidget: any;
-  focusWidget: any;
-  isMicEnabled: boolean;
-  onToggleMic: () => void;
-  participantVolumes: Record<string, number>;
-  onUpdateVolume: (userId: string, volume: number) => void;
-}) {
-  const remoteParticipants = useRemoteParticipants();
-  const { localParticipant } = useLocalParticipant();
-  const { isScreenSharing, toggleScreenShare, mappedStreams } = useScreenShare(widgets);
-  
-  // Sync mic state with LiveKit local participant
-  useEffect(() => {
-    const syncMic = async () => {
-      if (localParticipant) {
-        try {
-          await localParticipant.setMicrophoneEnabled(isMicEnabled);
-        } catch (err) {
-          console.error("Failed to sync mic state:", err);
-        }
-      }
-    };
-    syncMic();
-  }, [isMicEnabled, localParticipant]);
-
-  // Enable spatial audio
-  useSpatialAudio(remoteParticipants, otherCursors);
-
-  return (
-    <>
-      {/* Voice Orbs */}
-      {remoteParticipants.map((p) => {
-        const cursor = otherCursors.find((c) => c.userId === p.identity);
-        if (!cursor) return null;
-        return (
-          <VoiceOrb
-            key={p.sid}
-            participant={p}
-            x={cursor.x}
-            y={cursor.y}
-            volume={participantVolumes[p.identity] ?? 1}
-            onVolumeChange={(v) => onUpdateVolume(p.identity, v)}
-          />
-        );
-      })}
-
-      {/* Screen Share Widgets (Live Tracks) */}
-      {mappedStreams.map(({ trackReference, widget }) => {
-        if (!widget) return null;
-        return (
-          <StreamWidget
-            key={widget.id}
-            widget={widget}
-            trackReference={trackReference}
-            onMove={moveWidget}
-            onFocus={focusWidget}
-          />
-        );
-      })}
-
-      {/* Media Controls in Dock */}
-      <div className="flex items-center gap-1.5 px-1">
-        <ToolButton
-          active={true}
-          onClick={onToggleMic}
-          icon={isMicEnabled ? <Mic size={20} /> : <MicOff size={20} />}
-          label={isMicEnabled ? "Mute Mic" : "Unmute Mic"}
-          danger={!isMicEnabled}
-          success={isMicEnabled}
-        />
-        <ToolButton
-          active={isScreenSharing}
-          onClick={toggleScreenShare}
-          icon={isScreenSharing ? <MonitorOff size={20} /> : <MonitorUp size={20} />}
-          label={isScreenSharing ? "Stop Sharing" : "Share Screen"}
-          success={isScreenSharing}
-        />
-      </div>
-
-      <RoomAudioRenderer />
-    </>
-  );
-}

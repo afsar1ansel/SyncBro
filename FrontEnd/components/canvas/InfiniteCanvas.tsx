@@ -10,12 +10,25 @@ interface InfiniteCanvasProps {
   activeTool?: "select" | "box" | "sticky";
 }
 
-const MIN_ZOOM = 0.2;
+const WORKSPACE_SIZE = 5000;
+const MIN_ZOOM = 0.1; // Lowered to show the whole room
 const MAX_ZOOM = 4;
 const ZOOM_SENSITIVITY = 0.001;
 
-export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = "select" }: InfiniteCanvasProps) {
-  const { panOffset, zoom, setPanOffset, setZoom, screenToWorld, setLocalWorldPos } = useCanvas();
+export function InfiniteCanvas({
+  children,
+  overlay,
+  onCanvasClick,
+  activeTool = "select",
+}: InfiniteCanvasProps) {
+  const {
+    panOffset,
+    zoom,
+    setPanOffset,
+    setZoom,
+    screenToWorld,
+    setLocalWorldPos,
+  } = useCanvas();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPanning, setIsPanning] = React.useState(false);
@@ -27,8 +40,10 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
   // ── Pan: Middle-click, Space+drag, OR Left-click drag on background ───
   const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const isMiddleClick = e.button === 1;
-    const isSpacePan = e.button === 0 && e.currentTarget.dataset.spaceheld === "true";
-    const isLeftClickBackground = e.button === 0 && e.target === containerRef.current;
+    const isSpacePan =
+      e.button === 0 && e.currentTarget.dataset.spaceheld === "true";
+    const isLeftClickBackground =
+      e.button === 0 && e.target === containerRef.current;
 
     if (isMiddleClick || isSpacePan || isLeftClickBackground) {
       e.preventDefault();
@@ -51,9 +66,13 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
       const dy = e.clientY - lastMouse.current.y;
       if (Math.abs(dx) > 1 || Math.abs(dy) > 1) didPan.current = true;
       lastMouse.current = { x: e.clientX, y: e.clientY };
-      setPanOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+      setPanOffset((prev) => {
+        const newX = prev.x + dx;
+        const newY = prev.y + dy;
+        return { x: newX, y: newY };
+      });
     },
-    [setPanOffset, setLocalWorldPos, screenToWorld]
+    [setPanOffset, setLocalWorldPos, screenToWorld],
   );
 
   const onMouseUp = useCallback(
@@ -65,7 +84,11 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
       }
 
       // Left click on the canvas background (not a widget) → fire onCanvasClick
-      if (e.button === 0 && e.target === containerRef.current && onCanvasClick) {
+      if (
+        e.button === 0 &&
+        e.target === containerRef.current &&
+        onCanvasClick
+      ) {
         const rect = containerRef.current.getBoundingClientRect();
         const screenX = e.clientX - rect.left;
         const screenY = e.clientY - rect.top;
@@ -73,7 +96,7 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
         onCanvasClick(world.x, world.y);
       }
     },
-    [onCanvasClick, screenToWorld]
+    [onCanvasClick, screenToWorld],
   );
 
   // ── Zoom: scroll wheel centered on cursor ──────────────────────────────
@@ -86,7 +109,10 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
 
       setZoom((prevZoom) => {
         const delta = -e.deltaY * ZOOM_SENSITIVITY;
-        const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prevZoom * (1 + delta)));
+        const newZoom = Math.min(
+          MAX_ZOOM,
+          Math.max(MIN_ZOOM, prevZoom * (1 + delta)),
+        );
 
         // Adjust pan so the point under the cursor stays fixed
         setPanOffset((prevPan) => ({
@@ -109,7 +135,7 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
       const world = screenToWorld(mouseX, mouseY);
       setLocalWorldPos(world);
     },
-    [setZoom, setPanOffset, setLocalWorldPos, screenToWorld, panOffset, zoom]
+    [setZoom, setPanOffset, setLocalWorldPos, screenToWorld, panOffset, zoom],
   );
 
   // Attach wheel as non-passive so we can preventDefault
@@ -127,7 +153,11 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
-        if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
+        if (
+          (e.target as HTMLElement).tagName === "INPUT" ||
+          (e.target as HTMLElement).tagName === "TEXTAREA"
+        )
+          return;
         e.preventDefault();
         el.dataset.spaceheld = "true";
         setIsSpaceHeld(true);
@@ -154,19 +184,19 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
     <div
       ref={containerRef}
       className="relative w-full h-full overflow-hidden bg-zinc-950 select-none"
-      style={{ 
-        cursor: isPanning 
-          ? "grabbing" 
-          : isSpaceHeld 
-            ? "grab" 
-            : activeTool === "select" 
-              ? "default" 
-              : "crosshair" 
+      style={{
+        cursor: isPanning
+          ? "grabbing"
+          : isSpaceHeld
+            ? "grab"
+            : activeTool === "select"
+              ? "default"
+              : "crosshair",
       }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
-      onMouseLeave={() => { 
+      onMouseLeave={() => {
         isPanningRef.current = false;
         setIsPanning(false);
       }}
@@ -178,7 +208,22 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
           backgroundImage: `radial-gradient(circle, #3f3f46 1px, transparent 1px)`,
           backgroundSize: `${30 * zoom}px ${30 * zoom}px`,
           backgroundPosition: `${panOffset.x % (30 * zoom)}px ${panOffset.y % (30 * zoom)}px`,
-          opacity: 0.6,
+          opacity: 0.4,
+        }}
+      />
+
+      {/* Workspace Border (Finite Room) */}
+      <div
+        className="absolute pointer-events-none"
+        style={{
+          width: WORKSPACE_SIZE * zoom,
+          height: WORKSPACE_SIZE * zoom,
+          left: panOffset.x,
+          top: panOffset.y,
+          border: "2px solid rgba(59, 130, 246, 0.2)",
+          backgroundColor: "rgba(30, 30, 35, 0.3)",
+          boxShadow: "0 0 100px rgba(0, 0, 0, 0.5)",
+          borderRadius: "8px",
         }}
       />
 
@@ -198,9 +243,7 @@ export function InfiniteCanvas({ children, overlay, onCanvasClick, activeTool = 
 
       {/* Overlay – fixed UI elements that don't move with pan/zoom */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="pointer-events-auto">
-          {overlay}
-        </div>
+        <div className="pointer-events-auto">{overlay}</div>
       </div>
 
       {/* Zoom indicator */}

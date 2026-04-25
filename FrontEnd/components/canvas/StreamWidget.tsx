@@ -6,16 +6,17 @@ import { useCanvas } from "@/context/CanvasContext";
 import { VideoTrack } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-react";
 import type { WidgetData } from "@/hooks/useWidgets";
-import { Maximize2, MonitorOff } from "lucide-react";
+import { Maximize2, Monitor, X } from "lucide-react";
 
 interface StreamWidgetProps {
   widget: WidgetData;
   trackReference: TrackReference;
   onMove: (widgetId: string, x: number, y: number, w: number, h: number) => void;
   onFocus: (widgetId: string) => void;
+  onRemove: (widgetId: string) => void;
 }
 
-export function StreamWidget({ widget, trackReference, onMove, onFocus }: StreamWidgetProps) {
+export function StreamWidget({ widget, trackReference, onMove, onFocus, onRemove }: StreamWidgetProps) {
   const { zoom } = useCanvas();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -143,24 +144,36 @@ export function StreamWidget({ widget, trackReference, onMove, onFocus }: Stream
       className="group"
     >
       <div className="w-full h-full rounded-2xl border border-white/10 bg-black overflow-hidden shadow-2xl flex flex-col relative">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-2.5 bg-zinc-900/80 backdrop-blur-md border-b border-white/5 select-none">
-          <div className="flex gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
-            <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/80" />
-            <div className="h-2.5 w-2.5 rounded-full bg-green-500/80" />
+        {/* Header / Title Bar */}
+        <div 
+          className="flex items-center gap-2 px-3 py-2 bg-zinc-800/90 border-b border-white/5 cursor-grab active:cursor-grabbing group/title"
+          onMouseDown={onMouseDown}
+        >
+          <div className="flex gap-1.5 mr-2">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onRemove(widget.id); }}
+              className="h-3 w-3 rounded-full bg-red-500/40 hover:bg-red-500 transition-colors flex items-center justify-center group-hover/title:bg-red-500"
+            >
+              <X size={8} className="text-white opacity-0 group-hover/title:opacity-100" />
+            </button>
+            <div className="h-3 w-3 rounded-full bg-yellow-500/40" />
+            <div className="h-3 w-3 rounded-full bg-green-500/40" />
           </div>
-          <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-            <MonitorOff size={12} className="text-blue-500" />
+
+          <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2 select-none">
+            <Monitor size={12} className="text-blue-500" />
             {trackReference.participant.name || "Anonymous"}'s Screen
           </span>
           
-          <button 
-            onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-            className="ml-auto p-1.5 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
-          >
-            <Maximize2 size={14} />
-          </button>
+          <div className="ml-auto flex items-center gap-1">
+            <button 
+              onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+              className="p-1 rounded-lg hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+              title="Fullscreen"
+            >
+              <Maximize2 size={14} />
+            </button>
+          </div>
         </div>
 
         {/* Video Body */}
