@@ -118,8 +118,9 @@ export const setupSocketHandlers = (io) => {
           where: { id: widgetId },
           data: { data: updatedData },
         });
-
-        socket.to(roomId).emit('widget-data-updated', { widgetId, data });
+        
+        // Use io.to() to update everyone including sender to ensure sync
+        io.to(roomId).emit('widget-data-updated', { widgetId, data });
       } catch (error) {
         console.error('Error updating widget data:', error);
       }
@@ -134,7 +135,7 @@ export const setupSocketHandlers = (io) => {
           where: { id: widgetId },
           data: { x, y, width, height },
         });
-        socket.to(roomId).emit('widget-moved', { widgetId, x, y, width, height });
+        io.to(roomId).emit('widget-moved', { widgetId, x, y, width, height });
       } catch (error) {
         console.error('Error moving widget:', error);
       }
@@ -167,7 +168,7 @@ export const setupSocketHandlers = (io) => {
       if (!roomId) return;
       try {
         await prisma.widget.delete({ where: { id: widgetId } });
-        socket.to(roomId).emit('widget-removed', { widgetId });
+        io.to(roomId).emit('widget-removed', { widgetId });
       } catch (error) {
         console.error('Error removing widget:', error);
       }
