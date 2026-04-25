@@ -9,8 +9,8 @@ import { CanvasProvider } from "@/context/CanvasContext";
 import { RoomCanvas } from "@/components/canvas/RoomCanvas";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { useChat } from "@/hooks/useChat";
-import { useVoice } from "@/hooks/useVoice";
-import { Loader2, Users, ArrowLeft, Share, Check, MessageSquare, Mic } from "lucide-react";
+import { useLiveKit } from "@/hooks/useLiveKit";
+import { Loader2, Users, ArrowLeft, Share, Check, MessageSquare, Mic, MicOff, MonitorUp } from "lucide-react";
 import { LiveKitRoom } from "@livekit/components-react";
 import "@livekit/components-styles";
 import Link from "next/link";
@@ -45,8 +45,11 @@ export default function RoomPage({ params }: RoomPageProps) {
   // Chat hook
   const { messages, sendMessage, typingUsers, handleTyping } = useChat(room?.id);
   
-  // Voice hook
-  const { token, serverUrl, isJoined, joinVoice, leaveVoice } = useVoice(room?.id);
+  // LiveKit (Media) hook - connects automatically
+  const { token, serverUrl } = useLiveKit(room?.id);
+  
+  // Local state for toggles (publishing tracks)
+  const [isMicEnabled, setIsMicEnabled] = useState(false);
 
   // Notification logic: track unread messages
   const prevMsgCount = useRef(messages.length);
@@ -212,18 +215,6 @@ export default function RoomPage({ params }: RoomPageProps) {
             {copied ? "Copied!" : "Invite Friends"}
           </button>
 
-          <button
-            onClick={isJoined ? leaveVoice : joinVoice}
-            className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-              isJoined 
-                ? "bg-red-500/20 text-red-500 hover:bg-red-500/30" 
-                : "bg-zinc-800 text-white hover:bg-zinc-700"
-            }`}
-          >
-            <Mic size={14} />
-            {isJoined ? "Leave Voice" : "Join Voice"}
-          </button>
-
           {/* Socket status badge */}
           <div
             className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${
@@ -260,19 +251,22 @@ export default function RoomPage({ params }: RoomPageProps) {
       {/* Canvas area */}
       <main className="flex-1 relative overflow-hidden">
         <CanvasProvider>
-          {token && serverUrl ? (
+          {token && serverUrl && room ? (
             <LiveKitRoom
               token={token}
               serverUrl={serverUrl}
               connect={true}
-              audio={true}
+              audio={false}
               video={false}
               className="w-full h-full"
             >
-              {room && <RoomCanvas roomId={room.id} isVoiceActive={true} onLeaveVoice={leaveVoice} />}
+              <RoomCanvas roomId={room.id} isMicEnabled={isMicEnabled} onToggleMic={() => setIsMicEnabled(!isMicEnabled)} />
             </LiveKitRoom>
           ) : (
-            room && <RoomCanvas roomId={room.id} isVoiceActive={false} />
+            <div className="flex h-full items-center justify-center bg-zinc-950 flex-col gap-4">
+              <Loader2 className="animate-spin text-blue-500/50" size={32} />
+              <p className="text-zinc-600 text-xs">Initializing Media Engine...</p>
+            </div>
           )}
         </CanvasProvider>
       </main>

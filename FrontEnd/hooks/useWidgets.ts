@@ -40,6 +40,12 @@ export function useWidgets(roomId: string) {
     );
   }, []);
 
+  // Remove a widget
+  const removeWidget = useCallback((widgetId: string) => {
+    socketService.getSocket().emit("widget-removed", { widgetId });
+    setWidgets((prev) => prev.filter((w) => w.id !== widgetId));
+  }, []);
+
   // Bring widget to front
   const focusWidget = useCallback((widgetId: string) => {
     socketService.getSocket().emit("widget-focused", { widgetId });
@@ -83,11 +89,17 @@ export function useWidgets(roomId: string) {
       );
     };
 
+    // A widget was removed
+    const onWidgetRemoved = ({ widgetId }: { widgetId: string }) => {
+      setWidgets((prev) => prev.filter((w) => w.id !== widgetId));
+    };
+
     socket.on("room-joined", onRoomJoined);
     socket.on("widget-added", onWidgetAdded);
     socket.on("widget-moved", onWidgetMoved);
     socket.on("widget-focused", onWidgetFocused);
     socket.on("widget-data-updated", onWidgetDataUpdated);
+    socket.on("widget-removed", onWidgetRemoved);
 
     return () => {
       socket.off("room-joined", onRoomJoined);
@@ -95,8 +107,9 @@ export function useWidgets(roomId: string) {
       socket.off("widget-moved", onWidgetMoved);
       socket.off("widget-focused", onWidgetFocused);
       socket.off("widget-data-updated", onWidgetDataUpdated);
+      socket.off("widget-removed", onWidgetRemoved);
     };
   }, [roomId]);
 
-  return { widgets, placeWidget, moveWidget, focusWidget, updateWidgetData };
+  return { widgets, placeWidget, moveWidget, focusWidget, updateWidgetData, removeWidget };
 }

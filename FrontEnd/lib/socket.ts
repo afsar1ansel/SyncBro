@@ -10,6 +10,7 @@ class SocketService {
       this.socket = io(SOCKET_URL, {
         withCredentials: true,
         autoConnect: false, // We connect manually when entering a room
+        transports: ["websocket"],
       });
 
       this.socket.on("connect", () => {
