@@ -4,6 +4,7 @@ import app from './app.js';
 import { config } from './config/index.js';
 import { socketAuthMiddleware } from './middlewares/socket.middleware.js';
 import { setupSocketHandlers } from './socket/socket.server.js';
+import { setIO } from './socket/io.js';
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -12,6 +13,8 @@ const io = new Server(httpServer, {
     credentials: true,
   },
 });
+
+setIO(io);
 
 // Attach socket authentication middleware
 io.use(socketAuthMiddleware);

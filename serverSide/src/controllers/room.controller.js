@@ -1,5 +1,6 @@
 import prisma from '../config/prisma.js';
 import { v4 as uuidv4 } from 'uuid';
+import { getIO } from '../socket/io.js';
 
 export const createRoom = async (req, res, next) => {
   try {
@@ -24,6 +25,9 @@ export const createRoom = async (req, res, next) => {
       },
       include: {
         members: true,
+        owner: {
+          select: { name: true }
+        }
       },
     });
 
@@ -44,12 +48,26 @@ export const getMyRooms = async (req, res, next) => {
           { isPublic: true },
         ],
       },
+      include: {
+        owner: {
+          select: { name: true }
+        }
+      },
       orderBy: {
         id: 'desc',
       },
     });
 
-    res.status(200).json({ success: true, rooms });
+    const io = getIO();
+    const roomsWithCount = rooms.map(room => {
+      const onlineCount = io?.sockets.adapter.rooms.get(room.id)?.size || 0;
+      return {
+        ...room,
+        onlineCount
+      };
+    });
+
+    res.status(200).json({ success: true, rooms: roomsWithCount });
   } catch (error) {
     next(error);
   }
