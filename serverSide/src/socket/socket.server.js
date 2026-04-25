@@ -87,6 +87,8 @@ export const setupSocketHandlers = (io) => {
             type: 'STICKER', // Generic Box → mapped to STICKER
             x,
             y,
+            width: 200,
+            height: 150,
             z: nextZ,
             data: { label: 'Box' },
           },
@@ -101,15 +103,15 @@ export const setupSocketHandlers = (io) => {
     });
 
     // ─── widget-moved ──────────────────────────────────────────────────────
-    socket.on('widget-moved', async ({ widgetId, x, y }) => {
+    socket.on('widget-moved', async ({ widgetId, x, y, width, height }) => {
       const roomId = socket.data.roomId;
       if (!roomId) return;
       try {
         await prisma.widget.update({
           where: { id: widgetId },
-          data: { x, y },
+          data: { x, y, width, height },
         });
-        socket.to(roomId).emit('widget-moved', { widgetId, x, y });
+        socket.to(roomId).emit('widget-moved', { widgetId, x, y, width, height });
       } catch (error) {
         console.error('Error moving widget:', error);
       }
@@ -134,6 +136,42 @@ export const setupSocketHandlers = (io) => {
       } catch (error) {
         console.error('Error focusing widget:', error);
       }
+    });
+
+    // ─── send-message ──────────────────────────────────────────────────────
+    socket.on('send-message', async ({ content }) => {
+      const roomId = socket.data.roomId;
+      if (!roomId || !content || content.trim().length === 0) return;
+
+      try {
+        const message = await prisma.message.create({
+          data: {
+            roomId,
+            senderId: userId,
+            content: content.trim(),
+          },
+          include: {
+            sender: {
+              select: { name: true, avatarUrl: true },
+            },
+          },
+        });
+
+        io.to(roomId).emit('new-message', message);
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+    });
+
+    // ─── typing ────────────────────────────────────────────────────────────
+    socket.on('typing', ({ isTyping }) => {
+      const roomId = socket.data.roomId;
+      if (!roomId) return;
+      socket.to(roomId).emit('user-typing', {
+        userId,
+        name: socket.data.user.name,
+        isTyping,
+      });
     });
 
     // ─── disconnect ────────────────────────────────────────────────────────

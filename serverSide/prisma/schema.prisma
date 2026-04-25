@@ -70,6 +70,8 @@ model Widget {
   type    WidgetType
   x       Float
   y       Float
+  width   Float      @default(200)
+  height  Float      @default(150)
   z       Int        @default(0)
   data    Json?
 

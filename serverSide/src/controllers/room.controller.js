@@ -99,3 +99,34 @@ export const getRoomBySlug = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getRoomMessages = async (req, res, next) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user.id;
+
+    // Verify room membership (or let the socket handle it, but good to check here)
+    const membership = await prisma.roomMember.findUnique({
+      where: { userId_roomId: { userId, roomId } },
+    });
+
+    if (!membership) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    const messages = await prisma.message.findMany({
+      where: { roomId },
+      orderBy: { timestamp: 'asc' },
+      take: 50, // Get last 50 messages
+      include: {
+        sender: {
+          select: { name: true, avatarUrl: true },
+        },
+      },
+    });
+
+    res.status(200).json({ success: true, messages });
+  } catch (error) {
+    next(error);
+  }
+};
