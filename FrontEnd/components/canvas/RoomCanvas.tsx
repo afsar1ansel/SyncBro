@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { InfiniteCanvas } from "./InfiniteCanvas";
 import { useCursors } from "@/hooks/useCursors";
 import { useWidgets } from "@/hooks/useWidgets";
@@ -18,9 +18,17 @@ interface RoomCanvasProps {
   roomId: string;
   isMicEnabled: boolean;
   onToggleMic: () => void;
+  participantVolumes: Record<string, number>;
+  onUpdateVolume: (userId: string, volume: number) => void;
 }
 
-export function RoomCanvas({ roomId, isMicEnabled, onToggleMic }: RoomCanvasProps) {
+export function RoomCanvas({ 
+  roomId, 
+  isMicEnabled, 
+  onToggleMic,
+  participantVolumes,
+  onUpdateVolume
+}: RoomCanvasProps) {
   const otherCursors = useCursors(roomId);
   const { widgets, placeWidget, moveWidget, focusWidget, updateWidgetData, removeWidget } = useWidgets(roomId);
   const [activeTool, setActiveTool] = React.useState<"select" | "box" | "sticky">("select");
@@ -86,6 +94,8 @@ export function RoomCanvas({ roomId, isMicEnabled, onToggleMic }: RoomCanvasProp
               focusWidget={focusWidget}
               isMicEnabled={isMicEnabled}
               onToggleMic={onToggleMic}
+              participantVolumes={participantVolumes}
+              onUpdateVolume={onUpdateVolume}
             />
           </div>
         </div>
@@ -162,7 +172,9 @@ function LiveKitLayer({
   moveWidget,
   focusWidget,
   isMicEnabled,
-  onToggleMic
+  onToggleMic,
+  participantVolumes,
+  onUpdateVolume
 }: { 
   roomId: string;
   widgets: any[];
@@ -171,6 +183,8 @@ function LiveKitLayer({
   focusWidget: any;
   isMicEnabled: boolean;
   onToggleMic: () => void;
+  participantVolumes: Record<string, number>;
+  onUpdateVolume: (userId: string, volume: number) => void;
 }) {
   const remoteParticipants = useRemoteParticipants();
   const { localParticipant } = useLocalParticipant();
@@ -205,6 +219,8 @@ function LiveKitLayer({
             participant={p}
             x={cursor.x}
             y={cursor.y}
+            volume={participantVolumes[p.identity] ?? 1}
+            onVolumeChange={(v) => onUpdateVolume(p.identity, v)}
           />
         );
       })}
