@@ -74,11 +74,10 @@ export const setupSocketHandlers = (io) => {
     });
 
     // ─── widget-placed ─────────────────────────────────────────────────────
-    socket.on('widget-placed', async ({ x, y }) => {
+    socket.on('widget-placed', async ({ x, y, type, data }) => {
       const roomId = socket.data.roomId;
       if (!roomId) return;
       try {
-        // Get current max z in this room
         const maxZ = await prisma.widget.aggregate({
           where: { roomId },
           _max: { z: true },
@@ -88,21 +87,41 @@ export const setupSocketHandlers = (io) => {
         const widget = await prisma.widget.create({
           data: {
             roomId,
-            type: 'STICKER', // Generic Box → mapped to STICKER
+            type: type || 'STICKY',
             x,
             y,
-            width: 200,
-            height: 150,
+            width: type === 'STICKY' ? 250 : 200,
+            height: type === 'STICKY' ? 250 : 150,
             z: nextZ,
-            data: { label: 'Box' },
+            data: data || (type === 'STICKY' ? { text: '', color: '#fef08a' } : { label: 'Box' }),
           },
         });
 
-        // Emit to everyone including sender
         io.to(roomId).emit('widget-added', { widget });
-        console.log(`📦 Widget placed in room ${roomId} at (${x.toFixed(1)}, ${y.toFixed(1)})`);
+        console.log(`📦 Widget [${type}] placed in room ${roomId}`);
       } catch (error) {
         console.error('Error placing widget:', error);
+      }
+    });
+
+    // ─── widget-data-updated ───────────────────────────────────────────────
+    socket.on('widget-data-updated', async ({ widgetId, data }) => {
+      const roomId = socket.data.roomId;
+      if (!roomId) return;
+      try {
+        const widget = await prisma.widget.findUnique({ where: { id: widgetId } });
+        if (!widget) return;
+
+        const updatedData = { ...(widget.data || {}), ...data };
+
+        await prisma.widget.update({
+          where: { id: widgetId },
+          data: { data: updatedData },
+        });
+
+        socket.to(roomId).emit('widget-data-updated', { widgetId, data });
+      } catch (error) {
+        console.error('Error updating widget data:', error);
       }
     });
 

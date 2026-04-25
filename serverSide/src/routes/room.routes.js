@@ -12,5 +12,6 @@ router.get('/', roomController.getMyRooms);
 router.get('/:slug', roomController.getRoomBySlug);
 router.get('/:roomId/messages', roomController.getRoomMessages);
 router.post('/:roomId/livekit-token', livekitController.getLiveKitToken);
+router.delete('/:roomId', roomController.deleteRoom);
 
 export default router;

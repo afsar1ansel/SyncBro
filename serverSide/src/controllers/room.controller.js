@@ -148,3 +148,30 @@ export const getRoomMessages = async (req, res, next) => {
     next(error);
   }
 };
+
+export const deleteRoom = async (req, res, next) => {
+  try {
+    const { roomId } = req.params;
+    const userId = req.user.id;
+
+    const room = await prisma.room.findUnique({
+      where: { id: roomId },
+    });
+
+    if (!room) {
+      return res.status(404).json({ success: false, message: 'Room not found' });
+    }
+
+    if (room.ownerId !== userId) {
+      return res.status(403).json({ success: false, message: 'Only owners can delete rooms' });
+    }
+
+    await prisma.room.delete({
+      where: { id: roomId },
+    });
+
+    res.status(200).json({ success: true, message: 'Room deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
