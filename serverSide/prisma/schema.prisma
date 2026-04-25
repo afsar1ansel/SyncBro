@@ -63,6 +63,7 @@ enum WidgetType {
   YOUTUBE
   STICKER
   STICKY
+  SCREENSHARE
 }
 
 model Widget {

@@ -161,6 +161,64 @@ export const setupSocketHandlers = (io) => {
       }
     });
 
+    // ─── widget-removed ────────────────────────────────────────────────────
+    socket.on('widget-removed', async ({ widgetId }) => {
+      const roomId = socket.data.roomId;
+      if (!roomId) return;
+      try {
+        await prisma.widget.delete({ where: { id: widgetId } });
+        socket.to(roomId).emit('widget-removed', { widgetId });
+      } catch (error) {
+        console.error('Error removing widget:', error);
+      }
+    });
+
+    // ─── screen-share-started ──────────────────────────────────────────────
+    socket.on('screen-share-started', async ({ identity }) => {
+      const roomId = socket.data.roomId;
+      if (!roomId) return;
+      try {
+        const maxZ = await prisma.widget.aggregate({
+          where: { roomId },
+          _max: { z: true },
+        });
+        const nextZ = (maxZ._max.z ?? 0) + 1;
+
+        const widget = await prisma.widget.create({
+          data: {
+            roomId,
+            type: 'SCREENSHARE',
+            x: 100, // Default position
+            y: 100,
+            width: 640,
+            height: 400,
+            z: nextZ,
+            data: { participantIdentity: identity },
+          },
+        });
+
+        socket.data.activeScreenShareId = widget.id;
+        io.to(roomId).emit('widget-added', { widget });
+      } catch (error) {
+        console.error('Error starting screen share widget:', error);
+      }
+    });
+
+    // ─── screen-share-stopped ──────────────────────────────────────────────
+    socket.on('screen-share-stopped', async () => {
+      const roomId = socket.data.roomId;
+      const widgetId = socket.data.activeScreenShareId;
+      if (!roomId || !widgetId) return;
+
+      try {
+        await prisma.widget.delete({ where: { id: widgetId } });
+        socket.data.activeScreenShareId = null;
+        io.to(roomId).emit('widget-removed', { widgetId });
+      } catch (error) {
+        console.error('Error stopping screen share widget:', error);
+      }
+    });
+
     // ─── send-message ──────────────────────────────────────────────────────
     socket.on('send-message', async ({ content }) => {
       const roomId = socket.data.roomId;
@@ -198,9 +256,19 @@ export const setupSocketHandlers = (io) => {
     });
 
     // ─── disconnect ────────────────────────────────────────────────────────
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       const roomId = socket.data.roomId;
+      const activeScreenShareId = socket.data.activeScreenShareId;
+
       if (roomId) {
+        // Cleanup active screen share if any
+        if (activeScreenShareId) {
+          try {
+            await prisma.widget.delete({ where: { id: activeScreenShareId } });
+            socket.to(roomId).emit('widget-removed', { widgetId: activeScreenShareId });
+          } catch (e) {}
+        }
+
         const roomSize = io.sockets.adapter.rooms.get(roomId)?.size || 0;
         socket.to(roomId).emit('user-left', { userId, onlineCount: roomSize });
       }
