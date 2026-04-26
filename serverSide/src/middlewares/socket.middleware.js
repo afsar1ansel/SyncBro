@@ -2,15 +2,13 @@ import cookie from 'cookie';
 import { verifyToken } from '../utils/jwt.js';
 
 export const socketAuthMiddleware = (socket, next) => {
-  try {
-    const cookies = socket.handshake.headers.cookie;
-    
-    if (!cookies) {
-      return next(new Error('Authentication error: No cookies found'));
-    }
+    // Check for token in handshake.auth (LocalStorage) or Cookies
+    let token = socket.handshake.auth?.token;
 
-    const parsedCookies = cookie.parse(cookies);
-    const token = parsedCookies.auth_token;
+    if (!token && socket.handshake.headers.cookie) {
+      const parsedCookies = cookie.parse(socket.handshake.headers.cookie);
+      token = parsedCookies.auth_token;
+    }
 
     if (!token) {
       return next(new Error('Authentication error: No token found'));

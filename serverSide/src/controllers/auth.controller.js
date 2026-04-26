@@ -38,6 +38,7 @@ export const register = async (req, res, next) => {
         name: user.name,
         avatarUrl: user.avatarUrl,
       },
+      token, // Send token for LocalStorage
     });
   } catch (error) {
     next(error);
@@ -50,6 +51,7 @@ export const login = async (req, res, next) => {
 
     // Find user
     const user = await prisma.user.findUnique({ where: { email } });
+
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -73,6 +75,7 @@ export const login = async (req, res, next) => {
         name: user.name,
         avatarUrl: user.avatarUrl,
       },
+      token, // Send token for LocalStorage
     });
   } catch (error) {
     next(error);
