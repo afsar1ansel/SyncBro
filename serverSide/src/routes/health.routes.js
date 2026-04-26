@@ -1,13 +1,14 @@
 import express from 'express';
+import { getServerHealth, getDbHealth } from '../controllers/health.controller.js';
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is healthy',
-    timestamp: new Date().toISOString(),
-  });
-});
+// Get server health
+router.get('/', getServerHealth);
+router.get('/server', getServerHealth);
+
+// Get database health
+router.get('/db', getDbHealth);
 
 export default router;
+

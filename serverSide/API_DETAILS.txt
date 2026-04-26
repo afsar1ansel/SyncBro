@@ -3,16 +3,38 @@ the SyncBro backend system.
 
 1. HEALTH CHECK {
 
-    Endpoint:    GET /api/health
-    Description: Check if the API is running.
-    Response:
-    {
-      "success": true,
-      "message": "Server is healthy",
-      "timestamp": "2026-04-16T..."
+    1.1 SERVER HEALTH {
+        Endpoint:    GET /api/health/server
+        Description: Check if the API server is running and healthy.
+        Response:
+        {
+          "success": true,
+          "data": {
+            "status": "UP",
+            "message": "Server is running smoothly",
+            "timestamp": "2026-04-16T...",
+            "uptime": "123s",
+            "memoryUsage": { "rss": "...", "heapTotal": "...", "heapUsed": "..." }
+          }
+        }
+    }
+
+    1.2 DATABASE HEALTH {
+        Endpoint:    GET /api/health/db
+        Description: Check if the database connection is healthy.
+        Response:
+        {
+          "success": true,
+          "data": {
+            "status": "UP",
+            "message": "Database connection is healthy",
+            "timestamp": "2026-04-16T..."
+          }
+        }
     }
 
 }
+
 
 2. STANDARD ERROR RESPONSES {
 
