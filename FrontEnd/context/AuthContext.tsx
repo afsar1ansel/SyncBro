@@ -51,7 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const register = async (userData: any) => {
-    await api.post<{ success: boolean; user: User }>("/api/auth/register", userData);
+    const data = await api.post<{ success: boolean; user: User }>("/api/auth/register", userData);
+    if (data.success) {
+      setUser(data.user);
+    }
   };
 
   const logout = async () => {
