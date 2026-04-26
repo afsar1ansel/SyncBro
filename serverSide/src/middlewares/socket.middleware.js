@@ -2,6 +2,7 @@ import cookie from 'cookie';
 import { verifyToken } from '../utils/jwt.js';
 
 export const socketAuthMiddleware = (socket, next) => {
+  try {
     // Check for token in handshake.auth (LocalStorage) or Cookies
     let token = socket.handshake.auth?.token;
 
