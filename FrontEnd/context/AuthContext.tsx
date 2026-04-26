@@ -44,15 +44,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (credentials: any) => {
-    const data = await api.post<{ success: boolean; user: User }>("/api/auth/login", credentials);
+    const data = await api.post<{ success: boolean; user: User; token: string }>("/api/auth/login", credentials);
     if (data.success) {
+      localStorage.setItem("auth_token", data.token);
       setUser(data.user);
     }
   };
 
   const register = async (userData: any) => {
-    const data = await api.post<{ success: boolean; user: User }>("/api/auth/register", userData);
+    const data = await api.post<{ success: boolean; user: User; token: string }>("/api/auth/register", userData);
     if (data.success) {
+      localStorage.setItem("auth_token", data.token);
       setUser(data.user);
     }
   };
@@ -60,9 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await api.post("/api/auth/logout");
+      localStorage.removeItem("auth_token");
       setUser(null);
     } catch (error) {
       console.error("Logout failed:", error);
+      // Still clear local state even if server logout fails
+      localStorage.removeItem("auth_token");
+      setUser(null);
     }
   };
 

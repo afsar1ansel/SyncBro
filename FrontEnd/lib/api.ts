@@ -8,6 +8,15 @@ export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}
   const { data, ...init } = options;
   
   const headers = new Headers(init.headers);
+  
+  // Attach token if exists in localStorage
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+  }
+
   if (data && !(data instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }

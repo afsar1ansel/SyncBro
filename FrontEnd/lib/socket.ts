@@ -9,8 +9,11 @@ class SocketService {
     if (!this.socket) {
       this.socket = io(SOCKET_URL, {
         withCredentials: true,
-        autoConnect: false, // We connect manually when entering a room
+        autoConnect: false,
         transports: ["websocket"],
+        auth: {
+          token: typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
+        }
       });
 
       this.socket.on("connect", () => {
@@ -30,6 +33,14 @@ class SocketService {
 
   connect() {
     const socket = this.getSocket();
+    
+    // Update token before connecting
+    if (typeof window !== "undefined") {
+      socket.auth = {
+        token: localStorage.getItem("auth_token")
+      };
+    }
+
     if (socket.disconnected) {
       socket.connect();
     }
