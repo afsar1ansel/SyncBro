@@ -30,8 +30,11 @@ export function VoiceOrb({ participant, x, y, volume, onVolumeChange }: VoiceOrb
     <motion.div
       className="absolute pointer-events-auto z-40 group/orb"
       initial={false}
-      animate={{ x, y }}
-      transition={{ type: "spring", damping: 30, stiffness: 200, mass: 0.8 }}
+      animate={{ 
+        x: x + 32, 
+        y: y + 30 
+      }}
+      transition={{ type: "spring", damping: 35, stiffness: 250, mass: 0.5 }}
     >
       <div className="relative flex items-center justify-center">
         {/* Speaking Rings */}
@@ -43,27 +46,21 @@ export function VoiceOrb({ participant, x, y, volume, onVolumeChange }: VoiceOrb
                 animate={{ scale: 1.5, opacity: 0.3 }}
                 exit={{ scale: 2, opacity: 0 }}
                 transition={{ duration: 1, repeat: Infinity }}
-                className="absolute w-12 h-12 rounded-full bg-blue-500"
+                className="absolute w-20 h-20 rounded-full bg-blue-500"
               />
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1.2, opacity: 0.5 }}
                 exit={{ scale: 1.5, opacity: 0 }}
                 transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
-                className="absolute w-12 h-12 rounded-full bg-blue-400"
+                className="absolute w-20 h-20 rounded-full bg-blue-400"
               />
             </>
           )}
         </AnimatePresence>
 
-        {/* Avatar Orb */}
-        <div className={`w-12 h-12 rounded-full border-2 bg-zinc-900 flex items-center justify-center overflow-hidden shadow-lg transition-colors cursor-default ${
-          isSpeaking ? "border-blue-500 shadow-blue-500/50" : "border-white/10"
-        }`}>
-          <span className="text-sm font-bold text-white select-none">
-            {participant.identity.charAt(0).toUpperCase()}
-          </span>
-        </div>
+        {/* Central invisible anchor for speaking rings */}
+        <div className="w-12 h-12 rounded-full flex items-center justify-center pointer-events-none" />
 
         {/* Volume Slider Popover */}
         <div className="absolute -top-12 left-1/2 -translate-x-1/2 opacity-0 group-hover/orb:opacity-100 transition-opacity bg-zinc-900/90 backdrop-blur-md border border-white/10 rounded-full px-3 py-1.5 flex items-center gap-2 shadow-2xl pointer-events-auto">

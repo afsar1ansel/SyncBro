@@ -140,29 +140,19 @@ export function RoomCanvas({
         />
       ))}
 
-      {/* Other users' ghost cursors — also in world space */}
-      {otherCursors.map((cursor) => (
-        <GhostCursor
-          key={cursor.userId}
-          name={cursor.name}
-          avatarUrl={cursor.avatarUrl}
-          x={cursor.x}
-          y={cursor.y}
-        />
-      ))}
-
-      {/* Voice Orbs — rendered in world space */}
-      {remoteParticipants.map((p) => {
-        const cursor = otherCursors.find((c) => c.userId === p.identity);
-        if (!cursor) return null;
+      {/* Other users' ghost cursors — unified visuals & voice */}
+      {otherCursors.map((cursor) => {
+        const participant = remoteParticipants.find(p => p.identity === cursor.userId);
         return (
-          <VoiceOrb
-            key={p.sid}
-            participant={p}
+          <GhostCursor
+            key={cursor.userId}
+            name={cursor.name}
+            avatarUrl={cursor.avatarUrl}
             x={cursor.x}
             y={cursor.y}
-            volume={participantVolumes[p.identity] ?? 1}
-            onVolumeChange={(v) => onUpdateVolume(p.identity, v)}
+            participant={participant}
+            volume={participantVolumes[cursor.userId] ?? 1}
+            onVolumeChange={(v) => onUpdateVolume(cursor.userId, v)}
           />
         );
       })}
