@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { motion } from "framer-motion";
-import { Plus, Layout, Users, ChevronRight, Loader2, Trash2 } from "lucide-react";
+import { Plus, Layout, Users, ChevronRight, Loader2, Trash2, Settings, LogOut } from "lucide-react";
 
 interface Room {
   id: string;
@@ -19,7 +19,7 @@ interface Room {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -96,7 +96,24 @@ export default function Dashboard() {
             <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">
               Welcome back, {user.name}
             </h1>
-            <p className="text-zinc-400">Manage your collaborative rooms and sync in real-time.</p>
+            <div className="flex items-center gap-4 mt-2">
+              <p className="text-zinc-400">Manage your collaborative rooms and sync in real-time.</p>
+              <div className="h-4 w-px bg-zinc-800" />
+              <Link 
+                href="/settings" 
+                className="flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-blue-400 transition-colors uppercase tracking-widest"
+              >
+                <Settings size={14} />
+                Settings
+              </Link>
+              <button 
+                onClick={() => logout()}
+                className="flex items-center gap-2 text-xs font-bold text-zinc-500 hover:text-red-400 transition-colors uppercase tracking-widest"
+              >
+                <LogOut size={14} />
+                Logout
+              </button>
+            </div>
           </div>
           
           <form onSubmit={handleCreateRoom} className="flex flex-col sm:flex-row gap-2">

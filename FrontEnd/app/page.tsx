@@ -14,7 +14,8 @@ import {
   CheckCircle2, 
   Users,
   ChevronRight,
-  MonitorPlay
+  MonitorPlay,
+  Settings
 } from "lucide-react";
 
 export default function Home() {
@@ -40,11 +41,15 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-4">
           {!loading && user ? (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-6">
               <Link href="/dashboard" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors">
                 Dashboard
               </Link>
-              <div className="h-8 w-8 rounded-full border border-zinc-800 overflow-hidden bg-blue-600 flex items-center justify-center text-xs font-bold">
+              <Link href="/settings" className="text-sm font-medium text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5">
+                <Settings size={16} />
+                Settings
+              </Link>
+              <div className="h-8 w-8 rounded-full border border-zinc-800 overflow-hidden bg-blue-600 flex items-center justify-center text-xs font-bold shadow-lg shadow-blue-500/20">
                 {user.avatarUrl ? (
                   <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
                 ) : (
@@ -101,9 +106,12 @@ export default function Home() {
                       Enter Workspace
                     </button>
                   </Link>
-                  <button className="h-14 px-8 rounded-2xl bg-zinc-900/50 border border-white/10 text-white font-bold text-lg hover:bg-zinc-800 transition-all backdrop-blur-md active:scale-95">
-                    View Rooms
-                  </button>
+                  <Link href="/settings">
+                    <button className="h-14 px-8 rounded-2xl bg-zinc-900/50 border border-white/10 text-white font-bold text-lg hover:bg-zinc-800 transition-all backdrop-blur-md active:scale-95 flex items-center gap-2">
+                      <Settings size={20} />
+                      Settings
+                    </button>
+                  </Link>
                 </>
               ) : (
                 <>
