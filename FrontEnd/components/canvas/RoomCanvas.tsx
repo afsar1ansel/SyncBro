@@ -8,9 +8,21 @@ import { GhostCursor } from "./GhostCursor";
 import { Widget } from "./Widget";
 import { VoiceOrb } from "../voice/VoiceOrb";
 import { VoiceBar } from "../voice/VoiceBar";
-import { useRemoteParticipants, RoomAudioRenderer, useLocalParticipant } from "@livekit/components-react";
+import {
+  useRemoteParticipants,
+  RoomAudioRenderer,
+  useLocalParticipant,
+} from "@livekit/components-react";
 import { useSpatialAudio } from "@/hooks/useSpatialAudio";
-import { MousePointer2, Square, StickyNote, MonitorUp, MonitorOff, Mic, MicOff } from "lucide-react";
+import {
+  MousePointer2,
+  Square,
+  StickyNote,
+  MonitorUp,
+  MonitorOff,
+  Mic,
+  MicOff,
+} from "lucide-react";
 import { useScreenShare } from "@/hooks/useScreenShare";
 import { StreamWidget } from "./StreamWidget";
 
@@ -22,20 +34,30 @@ interface RoomCanvasProps {
   onUpdateVolume: (userId: string, volume: number) => void;
 }
 
-export function RoomCanvas({ 
-  roomId, 
-  isMicEnabled, 
+export function RoomCanvas({
+  roomId,
+  isMicEnabled,
   onToggleMic,
   participantVolumes,
-  onUpdateVolume
+  onUpdateVolume,
 }: RoomCanvasProps) {
   const otherCursors = useCursors(roomId);
-  const { widgets, placeWidget, moveWidget, focusWidget, updateWidgetData, removeWidget } = useWidgets(roomId);
-  const [activeTool, setActiveTool] = React.useState<"select" | "box" | "sticky">("select");
+  const {
+    widgets,
+    placeWidget,
+    moveWidget,
+    focusWidget,
+    updateWidgetData,
+    removeWidget,
+  } = useWidgets(roomId);
+  const [activeTool, setActiveTool] = React.useState<
+    "select" | "box" | "sticky"
+  >("select");
 
   const remoteParticipants = useRemoteParticipants();
   const { localParticipant } = useLocalParticipant();
-  const { isScreenSharing, toggleScreenShare, mappedStreams } = useScreenShare(widgets);
+  const { isScreenSharing, toggleScreenShare, mappedStreams } =
+    useScreenShare(widgets);
 
   // Sync mic state with LiveKit local participant
   useEffect(() => {
@@ -58,13 +80,16 @@ export function RoomCanvas({
     if (activeTool === "box") {
       placeWidget(worldX - 100, worldY - 75, "STICKER", { label: "New Box" });
     } else if (activeTool === "sticky") {
-      placeWidget(worldX - 125, worldY - 125, "STICKY", { text: "", color: "#fef08a" });
+      placeWidget(worldX - 125, worldY - 125, "STICKY", {
+        text: "",
+        color: "#fef08a",
+      });
     }
   };
 
   return (
-    <InfiniteCanvas 
-      onCanvasClick={handleCanvasClick} 
+    <InfiniteCanvas
+      onCanvasClick={handleCanvasClick}
       activeTool={activeTool}
       overlay={
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 pointer-events-none w-full max-w-fit">
@@ -83,23 +108,23 @@ export function RoomCanvas({
           <div className="flex items-center gap-2 p-2 rounded-[24px] bg-zinc-900/80 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto">
             {/* Tool Section */}
             <div className="flex items-center gap-1.5 px-1">
-              <ToolButton 
-                active={activeTool === "select"} 
-                onClick={() => setActiveTool("select")} 
-                icon={<MousePointer2 size={20} />} 
-                label="Select" 
+              <ToolButton
+                active={activeTool === "select"}
+                onClick={() => setActiveTool("select")}
+                icon={<MousePointer2 size={20} />}
+                label="Select"
               />
-              <ToolButton 
-                active={activeTool === "box"} 
-                onClick={() => setActiveTool("box")} 
-                icon={<Square size={20} />} 
-                label="Box" 
+              <ToolButton
+                active={activeTool === "box"}
+                onClick={() => setActiveTool("box")}
+                icon={<Square size={20} />}
+                label="Box"
               />
-              <ToolButton 
-                active={activeTool === "sticky"} 
-                onClick={() => setActiveTool("sticky")} 
-                icon={<StickyNote size={20} />} 
-                label="Sticky Note" 
+              <ToolButton
+                active={activeTool === "sticky"}
+                onClick={() => setActiveTool("sticky")}
+                icon={<StickyNote size={20} />}
+                label="Sticky Note"
               />
             </div>
 
@@ -119,7 +144,13 @@ export function RoomCanvas({
               <ToolButton
                 active={isScreenSharing}
                 onClick={toggleScreenShare}
-                icon={isScreenSharing ? <MonitorOff size={20} /> : <MonitorUp size={20} />}
+                icon={
+                  isScreenSharing ? (
+                    <MonitorOff size={20} />
+                  ) : (
+                    <MonitorUp size={20} />
+                  )
+                }
                 label={isScreenSharing ? "Stop Sharing" : "Share Screen"}
                 success={isScreenSharing}
               />
@@ -129,20 +160,24 @@ export function RoomCanvas({
       }
     >
       {/* Widgets — rendered in world space inside the transformed container */}
-      {widgets.filter(w => w.type !== "SCREENSHARE").map((widget) => (
-        <Widget
-          key={widget.id}
-          widget={widget}
-          onMove={moveWidget}
-          onFocus={focusWidget}
-          onUpdateData={updateWidgetData}
-          onRemove={removeWidget}
-        />
-      ))}
+      {widgets
+        .filter((w) => w.type !== "SCREENSHARE")
+        .map((widget) => (
+          <Widget
+            key={widget.id}
+            widget={widget}
+            onMove={moveWidget}
+            onFocus={focusWidget}
+            onUpdateData={updateWidgetData}
+            onRemove={removeWidget}
+          />
+        ))}
 
       {/* Other users' ghost cursors — unified visuals & voice */}
       {otherCursors.map((cursor) => {
-        const participant = remoteParticipants.find(p => p.identity === cursor.userId);
+        const participant = remoteParticipants.find(
+          (p) => p.identity === cursor.userId,
+        );
         return (
           <GhostCursor
             key={cursor.userId}
@@ -178,32 +213,32 @@ export function RoomCanvas({
   );
 }
 
-function ToolButton({ 
-  active, 
-  onClick, 
-  icon, 
-  label, 
+function ToolButton({
+  active,
+  onClick,
+  icon,
+  label,
   danger,
-  success
-}: { 
-  active: boolean, 
-  onClick: () => void, 
-  icon: React.ReactNode, 
-  label: string,
-  danger?: boolean,
-  success?: boolean
+  success,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  danger?: boolean;
+  success?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
       title={label}
       className={`p-3 rounded-2xl transition-all duration-200 flex items-center justify-center relative group ${
-        active 
-          ? danger 
+        active
+          ? danger
             ? "bg-red-500 text-white shadow-lg shadow-red-500/20"
             : success
               ? "bg-green-600 text-white shadow-lg shadow-green-600/20"
-              : "bg-white text-black shadow-lg shadow-white/10" 
+              : "bg-white text-black shadow-lg shadow-white/10"
           : "text-zinc-400 hover:text-white hover:bg-white/5"
       }`}
     >
@@ -215,4 +250,3 @@ function ToolButton({
     </button>
   );
 }
-

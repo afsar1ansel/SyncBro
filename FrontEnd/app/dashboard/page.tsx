@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
-import { motion } from "framer-motion";
-import { Plus, Layout, Users, ChevronRight, Loader2, Trash2, Settings, LogOut } from "lucide-react";
+import { Input } from "@/components/ui/Input";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Layout, Users, ChevronRight, Loader2, Trash2, Settings, LogOut, X, Globe, Lock } from "lucide-react";
 
 interface Room {
   id: string;
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [creating, setCreating] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [isPublic, setIsPublic] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchRooms = async () => {
     try {
@@ -52,6 +54,7 @@ export default function Dashboard() {
       if (data.success) {
         setRooms([data.room, ...rooms]);
         setNewRoomName("");
+        setIsModalOpen(false);
       }
     } catch (error) {
       console.error("Failed to create room:", error);
@@ -116,31 +119,10 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <form onSubmit={handleCreateRoom} className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="text"
-              placeholder="New room name..."
-              value={newRoomName}
-              onChange={(e) => setNewRoomName(e.target.value)}
-              className="h-12 px-4 rounded-xl bg-zinc-900 border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full md:w-64"
-            />
-            {/* Public / Private toggle */}
-            <button
-              type="button"
-              onClick={() => setIsPublic((p) => !p)}
-              className={`h-12 px-4 rounded-xl border text-sm font-semibold transition-all ${
-                isPublic
-                  ? "bg-green-500/10 border-green-500/30 text-green-400"
-                  : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-zinc-700"
-              }`}
-            >
-              {isPublic ? "🌐 Public" : "🔒 Private"}
-            </button>
-            <Button type="submit" disabled={creating} className="h-12 px-6">
-              {creating ? <Loader2 className="animate-spin" size={20} /> : <Plus size={20} className="mr-2" />}
-              Create
-            </Button>
-          </form>
+          <Button onClick={() => setIsModalOpen(true)} className="h-12 px-6">
+            <Plus size={20} className="mr-2" />
+            Create Room
+          </Button>
         </header>
 
         {loading ? (
@@ -154,6 +136,10 @@ export default function Dashboard() {
             <Layout size={48} className="text-zinc-700 mb-4" />
             <h3 className="text-xl font-medium text-zinc-400 mb-2">No rooms yet</h3>
             <p className="text-zinc-500 mb-8">Create your first room to start collaborating.</p>
+            <Button onClick={() => setIsModalOpen(true)} variant="outline">
+              <Plus size={20} className="mr-2" />
+              Create Room
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -218,6 +204,91 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Create Room Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden"
+            >
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-white">Create Room</h2>
+                  <button 
+                    onClick={() => setIsModalOpen(false)}
+                    className="p-2 hover:bg-zinc-800 rounded-xl text-zinc-500 transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateRoom} className="space-y-6">
+                  <Input
+                    label="Room Name"
+                    placeholder="Enter a cool name for your room..."
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    autoFocus
+                  />
+
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-zinc-400 ml-1">Privacy</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setIsPublic(false)}
+                        className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all ${
+                          !isPublic 
+                            ? "bg-blue-600/10 border-blue-500/50 text-blue-400" 
+                            : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                        }`}
+                      >
+                        <Lock size={20} />
+                        <span className="text-sm font-semibold">Private</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsPublic(true)}
+                        className={`flex flex-col items-center gap-3 p-4 rounded-2xl border transition-all ${
+                          isPublic 
+                            ? "bg-green-500/10 border-green-500/30 text-green-400" 
+                            : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                        }`}
+                      >
+                        <Globe size={20} />
+                        <span className="text-sm font-semibold">Public</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <Button 
+                      type="submit" 
+                      className="w-full h-14 text-lg" 
+                      isLoading={creating}
+                      disabled={!newRoomName.trim()}
+                    >
+                      {!creating && <Plus size={20} className="mr-2" />}
+                      Create Room
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Background decoration */}
       <div className="fixed inset-0 -z-50 overflow-hidden pointer-events-none">
