@@ -119,8 +119,8 @@ export const setupSocketHandlers = (io) => {
           data: { data: updatedData },
         });
         
-        // Use io.to() to update everyone including sender to ensure sync
-        io.to(roomId).emit('widget-data-updated', { widgetId, data });
+        // Use socket.to() to update everyone EXCEPT the sender
+        socket.to(roomId).emit('widget-data-updated', { widgetId, data });
       } catch (error) {
         console.error('Error updating widget data:', error);
       }
@@ -135,7 +135,7 @@ export const setupSocketHandlers = (io) => {
           where: { id: widgetId },
           data: { x, y, width, height },
         });
-        io.to(roomId).emit('widget-moved', { widgetId, x, y, width, height });
+        socket.to(roomId).emit('widget-moved', { widgetId, x, y, width, height });
       } catch (error) {
         console.error('Error moving widget:', error);
       }
@@ -156,7 +156,7 @@ export const setupSocketHandlers = (io) => {
           where: { id: widgetId },
           data: { z: nextZ },
         });
-        io.to(roomId).emit('widget-focused', { widgetId, z: nextZ });
+        socket.to(roomId).emit('widget-focused', { widgetId, z: nextZ });
       } catch (error) {
         console.error('Error focusing widget:', error);
       }

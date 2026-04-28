@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useRef, useCallback, useEffect } from "react";
+import { motion, useMotionValue } from "framer-motion";
 import { useCanvas } from "@/context/CanvasContext";
 import { VideoTrack } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-react";
@@ -35,8 +35,15 @@ export function StreamWidget({
   const containerRef = useRef<HTMLDivElement>(null);
   const [volume, setVolume] = React.useState(1);
 
+  // Local motion values for smooth interaction
+  const mvX = useMotionValue(widget.x);
+  const mvY = useMotionValue(widget.y);
+  const mvW = useMotionValue(widget.width || 640);
+  const mvH = useMotionValue(widget.height || 400);
+
   const isDragging = useRef(false);
   const isResizing = useRef(false);
+  const skipNextLayoutSync = useRef(false);
   const dragStart = useRef({
     mouseX: 0,
     mouseY: 0,
@@ -45,8 +52,30 @@ export function StreamWidget({
     worldW: 0,
     worldH: 0,
   });
-  const lastEmitTime = useRef(0);
-  const DRAG_THROTTLE = 33;
+
+  // Sync motion values with props when the widget is not being manipulated locally.
+  useEffect(() => {
+    if (isDragging.current || isResizing.current) return;
+
+    const nextWidth = widget.width || 640;
+    const nextHeight = widget.height || 400;
+    const alreadyAtNextLayout =
+      Math.abs(mvX.get() - widget.x) <= 0.5 &&
+      Math.abs(mvY.get() - widget.y) <= 0.5 &&
+      Math.abs(mvW.get() - nextWidth) <= 0.5 &&
+      Math.abs(mvH.get() - nextHeight) <= 0.5;
+
+    if (skipNextLayoutSync.current && alreadyAtNextLayout) {
+      skipNextLayoutSync.current = false;
+      return;
+    }
+
+    skipNextLayoutSync.current = false;
+    if (Math.abs(mvX.get() - widget.x) > 0.5) mvX.set(widget.x);
+    if (Math.abs(mvY.get() - widget.y) > 0.5) mvY.set(widget.y);
+    if (Math.abs(mvW.get() - nextWidth) > 0.5) mvW.set(nextWidth);
+    if (Math.abs(mvH.get() - nextHeight) > 0.5) mvH.set(nextHeight);
+  }, [widget.x, widget.y, widget.width, widget.height, mvX, mvY, mvW, mvH]);
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -58,36 +87,31 @@ export function StreamWidget({
       dragStart.current = {
         mouseX: e.clientX,
         mouseY: e.clientY,
-        worldX: widget.x,
-        worldY: widget.y,
-        worldW: widget.width || 640,
-        worldH: widget.height || 400,
+        worldX: mvX.get(),
+        worldY: mvY.get(),
+        worldW: mvW.get(),
+        worldH: mvH.get(),
       };
 
       onFocus(widget.id);
 
       const onMouseMove = (moveEvent: MouseEvent) => {
         if (!isDragging.current) return;
-        const now = Date.now();
         const dxScreen = moveEvent.clientX - dragStart.current.mouseX;
         const dyScreen = moveEvent.clientY - dragStart.current.mouseY;
 
         const newX = dragStart.current.worldX + dxScreen / zoom;
         const newY = dragStart.current.worldY + dyScreen / zoom;
 
-        if (now - lastEmitTime.current > DRAG_THROTTLE) {
-          onMove(
-            widget.id,
-            newX,
-            newY,
-            dragStart.current.worldW,
-            dragStart.current.worldH,
-          );
-          lastEmitTime.current = now;
-        }
+        mvX.set(newX);
+        mvY.set(newY);
       };
 
       const onMouseUp = () => {
+        if (isDragging.current) {
+          skipNextLayoutSync.current = true;
+          onMove(widget.id, mvX.get(), mvY.get(), mvW.get(), mvH.get());
+        }
         isDragging.current = false;
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
@@ -96,44 +120,45 @@ export function StreamWidget({
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     },
-    [widget.id, widget.x, widget.y, zoom, onMove, onFocus],
+    [widget.id, zoom, onMove, onFocus, mvX, mvY, mvW, mvH],
   );
 
   const onResizeStart = useCallback(
-    (e: React.MouseEvent, dir: string) => {
+    (e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
       isResizing.current = true;
       dragStart.current = {
         mouseX: e.clientX,
         mouseY: e.clientY,
-        worldX: widget.x,
-        worldY: widget.y,
-        worldW: widget.width || 640,
-        worldH: widget.height || 400,
+        worldX: mvX.get(),
+        worldY: mvY.get(),
+        worldW: mvW.get(),
+        worldH: mvH.get(),
       };
 
       onFocus(widget.id);
 
       const onMouseMove = (moveEvent: MouseEvent) => {
         if (!isResizing.current) return;
-        const now = Date.now();
         const dxScreen = moveEvent.clientX - dragStart.current.mouseX;
         const dyScreen = moveEvent.clientY - dragStart.current.mouseY;
 
         const dxWorld = dxScreen / zoom;
         const dyWorld = dyScreen / zoom;
 
-        let newW = Math.max(200, dragStart.current.worldW + dxWorld);
-        let newH = Math.max(150, dragStart.current.worldH + dyWorld);
+        const newW = Math.max(200, dragStart.current.worldW + dxWorld);
+        const newH = Math.max(150, dragStart.current.worldH + dyWorld);
 
-        if (now - lastEmitTime.current > DRAG_THROTTLE) {
-          onMove(widget.id, widget.x, widget.y, newW, newH);
-          lastEmitTime.current = now;
-        }
+        mvW.set(newW);
+        mvH.set(newH);
       };
 
       const onMouseUp = () => {
+        if (isResizing.current) {
+          skipNextLayoutSync.current = true;
+          onMove(widget.id, mvX.get(), mvY.get(), mvW.get(), mvH.get());
+        }
         isResizing.current = false;
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
@@ -142,7 +167,7 @@ export function StreamWidget({
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     },
-    [widget.id, widget.x, widget.y, zoom, onMove, onFocus],
+    [widget.id, zoom, onMove, onFocus, mvX, mvY, mvW, mvH],
   );
 
   const toggleFullscreen = () => {
@@ -168,11 +193,11 @@ export function StreamWidget({
       ref={containerRef}
       style={{
         position: "absolute",
-        left: widget.x,
-        top: widget.y,
+        left: mvX,
+        top: mvY,
         zIndex: widget.z,
-        width: widget.width || 640,
-        height: widget.height || 400,
+        width: mvW,
+        height: mvH,
       }}
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
@@ -258,7 +283,7 @@ export function StreamWidget({
         {/* Resize Handle */}
         <div
           className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize flex items-end justify-end p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-          onMouseDown={(e) => onResizeStart(e, "se")}
+          onMouseDown={onResizeStart}
         >
           <div className="w-1.5 h-1.5 rounded-full bg-blue-500/50" />
         </div>

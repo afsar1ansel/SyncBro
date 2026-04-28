@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import React, { useRef, useCallback, useEffect } from "react";
+import { motion, useMotionValue } from "framer-motion";
 import { useCanvas } from "@/context/CanvasContext";
 import type { WidgetData } from "@/hooks/useWidgets";
-import { X, Minus, GripHorizontal, Palette, Type, Check } from "lucide-react";
-import { useState } from "react";
+import { X, Palette, Type } from "lucide-react";
 
 interface WidgetProps {
   widget: WidgetData;
@@ -30,8 +29,15 @@ export function Widget({
 }: WidgetProps) {
   const { zoom } = useCanvas();
 
+  // Local motion values for buttery smooth movement without re-renders
+  const mvX = useMotionValue(widget.x);
+  const mvY = useMotionValue(widget.y);
+  const mvW = useMotionValue(widget.width || 200);
+  const mvH = useMotionValue(widget.height || 150);
+
   const isDragging = useRef(false);
   const isResizing = useRef(false);
+  const skipNextLayoutSync = useRef(false);
   const resizeDir = useRef<string | null>(null);
   const dragStart = useRef({
     mouseX: 0,
@@ -41,8 +47,30 @@ export function Widget({
     worldW: 0,
     worldH: 0,
   });
-  const lastEmitTime = useRef(0);
-  const DRAG_THROTTLE = 33; // ~30fps emit rate
+
+  // Sync local motion values with global state when NOT interacting
+  useEffect(() => {
+    if (isDragging.current || isResizing.current) return;
+
+    const nextWidth = widget.width || 200;
+    const nextHeight = widget.height || 150;
+    const alreadyAtNextLayout =
+      Math.abs(mvX.get() - widget.x) <= 0.5 &&
+      Math.abs(mvY.get() - widget.y) <= 0.5 &&
+      Math.abs(mvW.get() - nextWidth) <= 0.5 &&
+      Math.abs(mvH.get() - nextHeight) <= 0.5;
+
+    if (skipNextLayoutSync.current && alreadyAtNextLayout) {
+      skipNextLayoutSync.current = false;
+      return;
+    }
+
+    skipNextLayoutSync.current = false;
+    if (Math.abs(mvX.get() - widget.x) > 0.5) mvX.set(widget.x);
+    if (Math.abs(mvY.get() - widget.y) > 0.5) mvY.set(widget.y);
+    if (Math.abs(mvW.get() - nextWidth) > 0.5) mvW.set(nextWidth);
+    if (Math.abs(mvH.get() - nextHeight) > 0.5) mvH.set(nextHeight);
+  }, [widget.x, widget.y, widget.width, widget.height, mvX, mvY, mvW, mvH]);
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -57,36 +85,33 @@ export function Widget({
       dragStart.current = {
         mouseX: e.clientX,
         mouseY: e.clientY,
-        worldX: widget.x,
-        worldY: widget.y,
-        worldW: widget.width || 200,
-        worldH: widget.height || 150,
+        worldX: mvX.get(),
+        worldY: mvY.get(),
+        worldW: mvW.get(),
+        worldH: mvH.get(),
       };
 
       onFocus(widget.id);
 
       const onMouseMove = (moveEvent: MouseEvent) => {
         if (!isDragging.current) return;
-        const now = Date.now();
         const dxScreen = moveEvent.clientX - dragStart.current.mouseX;
         const dyScreen = moveEvent.clientY - dragStart.current.mouseY;
 
         const newX = dragStart.current.worldX + dxScreen / zoom;
         const newY = dragStart.current.worldY + dyScreen / zoom;
 
-        if (now - lastEmitTime.current > DRAG_THROTTLE) {
-          onMove(
-            widget.id,
-            newX,
-            newY,
-            dragStart.current.worldW,
-            dragStart.current.worldH,
-          );
-          lastEmitTime.current = now;
-        }
+        // Update local motion values instantly (no re-render, no API)
+        mvX.set(newX);
+        mvY.set(newY);
       };
 
       const onMouseUp = () => {
+        if (isDragging.current) {
+          skipNextLayoutSync.current = true;
+          // Commit the final position to global state and API
+          onMove(widget.id, mvX.get(), mvY.get(), mvW.get(), mvH.get());
+        }
         isDragging.current = false;
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
@@ -95,16 +120,7 @@ export function Widget({
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     },
-    [
-      widget.id,
-      widget.x,
-      widget.y,
-      widget.width,
-      widget.height,
-      zoom,
-      onMove,
-      onFocus,
-    ],
+    [widget.id, zoom, onMove, onFocus, mvX, mvY, mvW, mvH],
   );
 
   const onResizeStart = useCallback(
@@ -116,27 +132,26 @@ export function Widget({
       dragStart.current = {
         mouseX: e.clientX,
         mouseY: e.clientY,
-        worldX: widget.x,
-        worldY: widget.y,
-        worldW: widget.width || 200,
-        worldH: widget.height || 150,
+        worldX: mvX.get(),
+        worldY: mvY.get(),
+        worldW: mvW.get(),
+        worldH: mvH.get(),
       };
 
       onFocus(widget.id);
 
       const onMouseMove = (moveEvent: MouseEvent) => {
         if (!isResizing.current) return;
-        const now = Date.now();
         const dxScreen = moveEvent.clientX - dragStart.current.mouseX;
         const dyScreen = moveEvent.clientY - dragStart.current.mouseY;
 
         const dxWorld = dxScreen / zoom;
         const dyWorld = dyScreen / zoom;
 
-        let newX = widget.x;
-        let newY = widget.y;
-        let newW = widget.width;
-        let newH = widget.height;
+        let newX = dragStart.current.worldX;
+        let newY = dragStart.current.worldY;
+        let newW = dragStart.current.worldW;
+        let newH = dragStart.current.worldH;
 
         if (dir.includes("e"))
           newW = Math.max(100, dragStart.current.worldW + dxWorld);
@@ -153,13 +168,19 @@ export function Widget({
           newH = dragStart.current.worldH - delta;
         }
 
-        if (now - lastEmitTime.current > DRAG_THROTTLE) {
-          onMove(widget.id, newX, newY, newW, newH);
-          lastEmitTime.current = now;
-        }
+        // Update local motion values instantly
+        mvX.set(newX);
+        mvY.set(newY);
+        mvW.set(newW);
+        mvH.set(newH);
       };
 
       const onMouseUp = () => {
+        if (isResizing.current) {
+          skipNextLayoutSync.current = true;
+          // Commit the final size to global state and API
+          onMove(widget.id, mvX.get(), mvY.get(), mvW.get(), mvH.get());
+        }
         isResizing.current = false;
         resizeDir.current = null;
         window.removeEventListener("mousemove", onMouseMove);
@@ -169,16 +190,7 @@ export function Widget({
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     },
-    [
-      widget.id,
-      widget.x,
-      widget.y,
-      widget.width,
-      widget.height,
-      zoom,
-      onMove,
-      onFocus,
-    ],
+    [widget.id, zoom, onMove, onFocus, mvX, mvY, mvW, mvH],
   );
 
   // Secondary safeguard: if a SCREENSHARE widget somehow gets here, don't render it.
@@ -189,11 +201,11 @@ export function Widget({
     <motion.div
       style={{
         position: "absolute",
-        left: widget.x,
-        top: widget.y,
+        left: mvX,
+        top: mvY,
         zIndex: widget.z,
-        width: widget.width || 200,
-        height: widget.height || 150,
+        width: mvW,
+        height: mvH,
       }}
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}

@@ -15,6 +15,21 @@ export interface WidgetData {
   data?: { label?: string } | null;
 }
 
+function layoutMatches(
+  widget: WidgetData,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  return (
+    widget.x === x &&
+    widget.y === y &&
+    widget.width === width &&
+    widget.height === height
+  );
+}
+
 export function useWidgets(roomId: string) {
   const [widgets, setWidgets] = useState<WidgetData[]>([]);
 
@@ -34,10 +49,18 @@ export function useWidgets(roomId: string) {
   // Move or Resize a widget
   const moveWidget = useCallback((widgetId: string, x: number, y: number, width: number, height: number) => {
     socketService.getSocket().emit("widget-moved", { widgetId, x, y, width, height });
-    // Optimistic update — apply locally immediately
-    setWidgets((prev) =>
-      prev.map((w) => (w.id === widgetId ? { ...w, x, y, width, height } : w))
-    );
+    
+    setWidgets((prev) => {
+      let changed = false;
+      const next = prev.map((w) => {
+        if (w.id !== widgetId) return w;
+        if (layoutMatches(w, x, y, width, height)) return w;
+        changed = true;
+        return { ...w, x, y, width, height };
+      });
+
+      return changed ? next : prev;
+    });
   }, []);
 
   // Remove a widget
@@ -70,9 +93,17 @@ export function useWidgets(roomId: string) {
 
     // A widget was moved or resized by another user
     const onWidgetMoved = ({ widgetId, x, y, width, height }: { widgetId: string; x: number; y: number; width: number; height: number }) => {
-      setWidgets((prev) =>
-        prev.map((w) => (w.id === widgetId ? { ...w, x, y, width, height } : w))
-      );
+      setWidgets((prev) => {
+        let changed = false;
+        const next = prev.map((w) => {
+          if (w.id !== widgetId) return w;
+          if (layoutMatches(w, x, y, width, height)) return w;
+          changed = true;
+          return { ...w, x, y, width, height };
+        });
+
+        return changed ? next : prev;
+      });
     };
 
     // A widget z-index was updated
