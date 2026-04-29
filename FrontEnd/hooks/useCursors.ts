@@ -26,9 +26,13 @@ export function useCursors(roomId: string) {
     // Note: This hook assumes it's used within a CanvasProvider
     const world = screenToWorld(e.clientX, e.clientY);
     
+    const WORKSPACE_SIZE = 5000;
+    const clampedX = Math.max(0, Math.min(WORKSPACE_SIZE, world.x));
+    const clampedY = Math.max(0, Math.min(WORKSPACE_SIZE, world.y));
+
     socketService.getSocket().emit("cursor-move", {
-      x: world.x,
-      y: world.y
+      x: clampedX,
+      y: clampedY
     });
 
     lastEmitTime.current = now;

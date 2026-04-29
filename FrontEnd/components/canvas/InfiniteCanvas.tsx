@@ -69,7 +69,20 @@ export function InfiniteCanvas({
       setPanOffset((prev) => {
         const newX = prev.x + dx;
         const newY = prev.y + dy;
-        return { x: newX, y: newY };
+        
+        const containerWidth = containerRef.current?.clientWidth || 0;
+        const containerHeight = containerRef.current?.clientHeight || 0;
+        const margin = 200;
+
+        const minX = margin - WORKSPACE_SIZE * zoom;
+        const maxX = containerWidth - margin;
+        const minY = margin - WORKSPACE_SIZE * zoom;
+        const maxY = containerHeight - margin;
+
+        return {
+          x: Math.max(minX, Math.min(maxX, newX)),
+          y: Math.max(minY, Math.min(maxY, newY)),
+        };
       });
     },
     [setPanOffset, setLocalWorldPos, screenToWorld],
@@ -115,10 +128,24 @@ export function InfiniteCanvas({
         );
 
         // Adjust pan so the point under the cursor stays fixed
-        setPanOffset((prevPan) => ({
-          x: mouseX - (mouseX - prevPan.x) * (newZoom / prevZoom),
-          y: mouseY - (mouseY - prevPan.y) * (newZoom / prevZoom),
-        }));
+        setPanOffset((prevPan) => {
+          const calculatedX = mouseX - (mouseX - prevPan.x) * (newZoom / prevZoom);
+          const calculatedY = mouseY - (mouseY - prevPan.y) * (newZoom / prevZoom);
+
+          const containerWidth = containerRef.current?.clientWidth || 0;
+          const containerHeight = containerRef.current?.clientHeight || 0;
+          const margin = 200;
+
+          const minX = margin - WORKSPACE_SIZE * newZoom;
+          const maxX = containerWidth - margin;
+          const minY = margin - WORKSPACE_SIZE * newZoom;
+          const maxY = containerHeight - margin;
+
+          return {
+            x: Math.max(minX, Math.min(maxX, calculatedX)),
+            y: Math.max(minY, Math.min(maxY, calculatedY)),
+          };
+        });
 
         // After zoom, update world pos since zoom changed
         const newWorld = {
@@ -201,31 +228,7 @@ export function InfiniteCanvas({
         setIsPanning(false);
       }}
     >
-      {/* Dot-grid background that moves with pan/zoom */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `radial-gradient(circle, #3f3f46 1px, transparent 1px)`,
-          backgroundSize: `${30 * zoom}px ${30 * zoom}px`,
-          backgroundPosition: `${panOffset.x % (30 * zoom)}px ${panOffset.y % (30 * zoom)}px`,
-          opacity: 0.4,
-        }}
-      />
 
-      {/* Workspace Border (Finite Room) */}
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          width: WORKSPACE_SIZE * zoom,
-          height: WORKSPACE_SIZE * zoom,
-          left: panOffset.x,
-          top: panOffset.y,
-          border: "2px solid rgba(59, 130, 246, 0.2)",
-          backgroundColor: "rgba(30, 30, 35, 0.3)",
-          boxShadow: "0 0 100px rgba(0, 0, 0, 0.5)",
-          borderRadius: "8px",
-        }}
-      />
 
       {/* World transform container – everything placed in world coords lives here */}
       <div
@@ -238,6 +241,23 @@ export function InfiniteCanvas({
           willChange: "transform",
         }}
       >
+        {/* Finite Room Background & Border */}
+        <div
+          style={{
+            position: "absolute",
+            width: WORKSPACE_SIZE,
+            height: WORKSPACE_SIZE,
+            top: 0,
+            left: 0,
+            backgroundColor: "rgba(20, 20, 25, 0.6)",
+            backgroundImage: `radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)`,
+            backgroundSize: "30px 30px",
+            borderRadius: "24px",
+            border: "2px solid rgba(59, 130, 246, 0.2)",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            pointerEvents: "none",
+          }}
+        />
         {children}
       </div>
 

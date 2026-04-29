@@ -100,8 +100,21 @@ export function StreamWidget({
         const dxScreen = moveEvent.clientX - dragStart.current.mouseX;
         const dyScreen = moveEvent.clientY - dragStart.current.mouseY;
 
-        const newX = dragStart.current.worldX + dxScreen / zoom;
-        const newY = dragStart.current.worldY + dyScreen / zoom;
+        const WORKSPACE_SIZE = 5000;
+        const newX = Math.max(
+          0,
+          Math.min(
+            WORKSPACE_SIZE - mvW.get(),
+            dragStart.current.worldX + dxScreen / zoom,
+          ),
+        );
+        const newY = Math.max(
+          0,
+          Math.min(
+            WORKSPACE_SIZE - mvH.get(),
+            dragStart.current.worldY + dyScreen / zoom,
+          ),
+        );
 
         mvX.set(newX);
         mvY.set(newY);
@@ -147,8 +160,12 @@ export function StreamWidget({
         const dxWorld = dxScreen / zoom;
         const dyWorld = dyScreen / zoom;
 
-        const newW = Math.max(200, dragStart.current.worldW + dxWorld);
-        const newH = Math.max(150, dragStart.current.worldH + dyWorld);
+        const WORKSPACE_SIZE = 5000;
+        let newW = Math.max(200, dragStart.current.worldW + dxWorld);
+        let newH = Math.max(150, dragStart.current.worldH + dyWorld);
+
+        newW = Math.min(WORKSPACE_SIZE - mvX.get(), newW);
+        newH = Math.min(WORKSPACE_SIZE - mvY.get(), newH);
 
         mvW.set(newW);
         mvH.set(newH);

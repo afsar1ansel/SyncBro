@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { InfiniteCanvas } from "./InfiniteCanvas";
+import { useCanvas } from "@/context/CanvasContext";
 import { useCursors } from "@/hooks/useCursors";
 import { useWidgets } from "@/hooks/useWidgets";
 import { GhostCursor } from "./GhostCursor";
@@ -50,9 +51,30 @@ export function RoomCanvas({
     updateWidgetData,
     removeWidget,
   } = useWidgets(roomId);
-  const [activeTool, setActiveTool] = React.useState<
-    "select" | "box" | "sticky"
-  >("select");
+  const { screenToWorld } = useCanvas();
+
+  const handleSpawnBox = () => {
+    const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
+    const WORKSPACE_SIZE = 5000;
+    const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+    
+    const x = clamp(center.x - 100, 0, WORKSPACE_SIZE - 200);
+    const y = clamp(center.y - 75, 0, WORKSPACE_SIZE - 150);
+    placeWidget(x, y, "STICKER", { label: "New Box" });
+  };
+
+  const handleSpawnSticky = () => {
+    const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
+    const WORKSPACE_SIZE = 5000;
+    const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+    
+    const x = clamp(center.x - 125, 0, WORKSPACE_SIZE - 250);
+    const y = clamp(center.y - 125, 0, WORKSPACE_SIZE - 250);
+    placeWidget(x, y, "STICKY", {
+      text: "",
+      color: "#fef08a",
+    });
+  };
 
   const remoteParticipants = useRemoteParticipants();
   const { localParticipant } = useLocalParticipant();
@@ -77,20 +99,13 @@ export function RoomCanvas({
   useSpatialAudio(remoteParticipants, otherCursors);
 
   const handleCanvasClick = (worldX: number, worldY: number) => {
-    if (activeTool === "box") {
-      placeWidget(worldX - 100, worldY - 75, "STICKER", { label: "New Box" });
-    } else if (activeTool === "sticky") {
-      placeWidget(worldX - 125, worldY - 125, "STICKY", {
-        text: "",
-        color: "#fef08a",
-      });
-    }
+    // Widgets are placed directly via the dock options
   };
 
   return (
     <InfiniteCanvas
       onCanvasClick={handleCanvasClick}
-      activeTool={activeTool}
+      activeTool="select"
       overlay={
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 pointer-events-none w-full max-w-fit">
           {/* Controls hint — floating above the dock */}
@@ -109,20 +124,20 @@ export function RoomCanvas({
             {/* Tool Section */}
             <div className="flex items-center gap-1.5 px-1">
               <ToolButton
-                active={activeTool === "select"}
-                onClick={() => setActiveTool("select")}
+                active={true}
+                onClick={() => {}}
                 icon={<MousePointer2 size={20} />}
                 label="Select"
               />
               <ToolButton
-                active={activeTool === "box"}
-                onClick={() => setActiveTool("box")}
+                active={false}
+                onClick={handleSpawnBox}
                 icon={<Square size={20} />}
                 label="Box"
               />
               <ToolButton
-                active={activeTool === "sticky"}
-                onClick={() => setActiveTool("sticky")}
+                active={false}
+                onClick={handleSpawnSticky}
                 icon={<StickyNote size={20} />}
                 label="Sticky Note"
               />

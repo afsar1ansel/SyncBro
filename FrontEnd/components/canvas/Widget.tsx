@@ -98,8 +98,21 @@ export function Widget({
         const dxScreen = moveEvent.clientX - dragStart.current.mouseX;
         const dyScreen = moveEvent.clientY - dragStart.current.mouseY;
 
-        const newX = dragStart.current.worldX + dxScreen / zoom;
-        const newY = dragStart.current.worldY + dyScreen / zoom;
+        const WORKSPACE_SIZE = 5000;
+        const newX = Math.max(
+          0,
+          Math.min(
+            WORKSPACE_SIZE - mvW.get(),
+            dragStart.current.worldX + dxScreen / zoom,
+          ),
+        );
+        const newY = Math.max(
+          0,
+          Math.min(
+            WORKSPACE_SIZE - mvH.get(),
+            dragStart.current.worldY + dyScreen / zoom,
+          ),
+        );
 
         // Update local motion values instantly (no re-render, no API)
         mvX.set(newX);
@@ -148,24 +161,29 @@ export function Widget({
         const dxWorld = dxScreen / zoom;
         const dyWorld = dyScreen / zoom;
 
+        const WORKSPACE_SIZE = 5000;
         let newX = dragStart.current.worldX;
         let newY = dragStart.current.worldY;
         let newW = dragStart.current.worldW;
         let newH = dragStart.current.worldH;
 
-        if (dir.includes("e"))
+        if (dir.includes("e")) {
           newW = Math.max(100, dragStart.current.worldW + dxWorld);
-        if (dir.includes("s"))
+          newW = Math.min(WORKSPACE_SIZE - newX, newW);
+        }
+        if (dir.includes("s")) {
           newH = Math.max(60, dragStart.current.worldH + dyWorld);
+          newH = Math.min(WORKSPACE_SIZE - newY, newH);
+        }
         if (dir.includes("w")) {
           const delta = Math.min(dragStart.current.worldW - 100, dxWorld);
-          newX = dragStart.current.worldX + delta;
-          newW = dragStart.current.worldW - delta;
+          newX = Math.max(0, dragStart.current.worldX + delta);
+          newW = dragStart.current.worldX + dragStart.current.worldW - newX;
         }
         if (dir.includes("n")) {
           const delta = Math.min(dragStart.current.worldH - 60, dyWorld);
-          newY = dragStart.current.worldY + delta;
-          newH = dragStart.current.worldH - delta;
+          newY = Math.max(0, dragStart.current.worldY + delta);
+          newH = dragStart.current.worldY + dragStart.current.worldH - newY;
         }
 
         // Update local motion values instantly
