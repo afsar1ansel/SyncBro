@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useCallback, useEffect } from "react";
-import { motion, useMotionValue } from "framer-motion";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useCanvas } from "@/context/CanvasContext";
 import { VideoTrack } from "@livekit/components-react";
 import type { TrackReference } from "@livekit/components-react";
@@ -40,6 +40,15 @@ export function StreamWidget({
   const mvY = useMotionValue(widget.y);
   const mvW = useMotionValue(widget.width || 640);
   const mvH = useMotionValue(widget.height || 400);
+
+  const scale = useTransform([mvW, mvH], ([w, h]) => {
+    return Math.min((w as number) / 640, (h as number) / 400);
+  });
+
+  const btnSize = useTransform(scale, (s) => 12 * s);
+  const btnInnerSize = useTransform(scale, (s) => 8 * s);
+  const titleFontSize = useTransform(scale, (s) => 10 * s);
+  const iconSize = useTransform(scale, (s) => 12 * s);
 
   const isDragging = useRef(false);
   const isResizing = useRef(false);
@@ -228,24 +237,28 @@ export function StreamWidget({
           onMouseDown={onMouseDown}
         >
           <div className="flex gap-1.5 mr-2">
-            <button
+            <motion.button
               onClick={(e) => {
                 e.stopPropagation();
                 onRemove(widget.id);
               }}
-              className="h-3 w-3 rounded-full bg-red-500/40 hover:bg-red-500 transition-colors flex items-center justify-center group-hover/title:bg-red-500"
+              style={{ width: btnSize, height: btnSize }}
+              className="rounded-full bg-red-500/40 hover:bg-red-500 transition-colors flex items-center justify-center group-hover/title:bg-red-500"
             >
               <X
-                size={8}
+                style={{ width: btnInnerSize, height: btnInnerSize }}
                 className="text-white opacity-0 group-hover/title:opacity-100"
               />
-            </button>
-            <div className="h-3 w-3 rounded-full bg-yellow-500/40" />
-            <div className="h-3 w-3 rounded-full bg-green-500/40" />
+            </motion.button>
+            <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-yellow-500/40" />
+            <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-green-500/40" />
           </div>
 
-          <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2 select-none">
-            <Monitor size={12} className="text-blue-500" />
+          <motion.span 
+            style={{ fontSize: titleFontSize }}
+            className="font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2 select-none"
+          >
+            <Monitor style={{ width: iconSize, height: iconSize }} className="text-blue-500" />
             {trackReference.participant.name || "Anonymous"}'s Screen
             {audioTrack ? (
               <div
@@ -266,7 +279,7 @@ export function StreamWidget({
             ) : (
               <VolumeX size={10} className="text-zinc-600" />
             )}
-          </span>
+          </motion.span>
 
           <div className="ml-auto flex items-center gap-1">
             <button

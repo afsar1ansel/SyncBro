@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useCallback, useEffect } from "react";
-import { motion, useMotionValue } from "framer-motion";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useCanvas } from "@/context/CanvasContext";
 import type { WidgetData } from "@/hooks/useWidgets";
 import { X, Palette, Type } from "lucide-react";
@@ -34,6 +34,20 @@ export function Widget({
   const mvY = useMotionValue(widget.y);
   const mvW = useMotionValue(widget.width || 200);
   const mvH = useMotionValue(widget.height || 150);
+
+  const scale = useTransform([mvW, mvH], ([w, h]) => {
+    const baseW = widget.type === "STICKY" ? 250 : 200;
+    const baseH = widget.type === "STICKY" ? 250 : 150;
+    return Math.min((w as number) / baseW, (h as number) / baseH);
+  });
+
+  const btnSize = useTransform(scale, (s) => 12 * s);
+  const btnInnerSize = useTransform(scale, (s) => 8 * s);
+  const titleFontSize = useTransform(scale, (s) => 10 * s);
+  const timeFontSize = useTransform(scale, (s) => 9 * s);
+  const textFontSize = useTransform(scale, (s) => 14 * s);
+  const inputFontSize = useTransform(scale, (s) => 12 * s);
+  const paddingSize = useTransform(scale, (s) => 16 * s);
 
   const isDragging = useRef(false);
   const isResizing = useRef(false);
@@ -244,34 +258,41 @@ export function Widget({
           onMouseDown={onMouseDown}
         >
           <div className="flex gap-1.5 mr-2">
-            <button
+            <motion.button
               onClick={(e) => {
                 e.stopPropagation();
                 onRemove(widget.id);
               }}
-              className="h-3 w-3 rounded-full bg-red-500/40 hover:bg-red-500 transition-colors flex items-center justify-center group-hover/title:bg-red-500"
+              style={{ width: btnSize, height: btnSize }}
+              className="rounded-full bg-red-500/40 hover:bg-red-500 transition-colors flex items-center justify-center group-hover/title:bg-red-500"
             >
               <X
-                size={8}
+                style={{ width: btnInnerSize, height: btnInnerSize }}
                 className="text-white opacity-0 group-hover/title:opacity-100"
               />
-            </button>
-            <div className="h-3 w-3 rounded-full bg-yellow-500/40" />
-            <div className="h-3 w-3 rounded-full bg-green-500/40" />
+            </motion.button>
+            <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-yellow-500/40" />
+            <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-green-500/40" />
           </div>
 
-          <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest select-none flex items-center gap-2">
+          <motion.span 
+            style={{ fontSize: titleFontSize }}
+            className="text-zinc-400 font-bold uppercase tracking-widest select-none flex items-center gap-2"
+          >
             {widget.type === "STICKY" ? (
-              <Type size={10} />
+              <Type style={{ width: titleFontSize, height: titleFontSize }} />
             ) : (
-              <Palette size={10} />
+              <Palette style={{ width: titleFontSize, height: titleFontSize }} />
             )}
             {widget.type}
-          </span>
+          </motion.span>
 
-          <span className="ml-auto text-[9px] text-zinc-600 font-mono">
+          <motion.span 
+            style={{ fontSize: timeFontSize }}
+            className="ml-auto text-zinc-600 font-mono"
+          >
             {Math.round(widget.width)}x{Math.round(widget.height)}
-          </span>
+          </motion.span>
         </div>
 
         {/* Widget body */}
@@ -286,17 +307,19 @@ export function Widget({
         >
           {widget.type === "STICKY" ? (
             <>
-              <textarea
+              <motion.textarea
                 value={(widget.data as any)?.text ?? ""}
                 onChange={(e) =>
                   onUpdateData(widget.id, { text: e.target.value })
                 }
                 onFocus={() => onFocus(widget.id)}
                 placeholder="Type something..."
-                className="w-full h-full p-4 bg-transparent resize-none focus:outline-none text-sm text-zinc-200 placeholder:text-zinc-600 leading-relaxed scrollbar-hide"
+                className="w-full h-full bg-transparent resize-none focus:outline-none text-zinc-200 placeholder:text-zinc-600 leading-relaxed scrollbar-hide"
                 style={{
                   color: (widget.data as any)?.color || "#fef08a",
                   fontFamily: "'Inter', sans-serif",
+                  fontSize: textFontSize,
+                  padding: paddingSize,
                 }}
               />
               {/* Color Bar for Sticky */}
@@ -321,14 +344,17 @@ export function Widget({
                 backgroundColor: `${(widget.data as any)?.color || "#3b82f6"}08`,
               }}
             >
-              <input
+              <motion.input
                 value={(widget.data as any)?.label ?? "New Group"}
                 onChange={(e) =>
                   onUpdateData(widget.id, { label: e.target.value })
                 }
                 onFocus={() => onFocus(widget.id)}
-                className="bg-transparent text-center text-xs font-bold uppercase tracking-widest focus:outline-none placeholder:text-zinc-700"
-                style={{ color: (widget.data as any)?.color || "#3b82f6" }}
+                className="bg-transparent text-center font-bold uppercase tracking-widest focus:outline-none placeholder:text-zinc-700"
+                style={{ 
+                  color: (widget.data as any)?.color || "#3b82f6",
+                  fontSize: inputFontSize,
+                }}
               />
 
               {/* Controls for Box */}
