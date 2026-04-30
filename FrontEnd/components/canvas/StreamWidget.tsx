@@ -245,10 +245,9 @@ export function StreamWidget({
               style={{ width: btnSize, height: btnSize }}
               className="rounded-full bg-red-500/40 hover:bg-red-500 transition-colors flex items-center justify-center group-hover/title:bg-red-500"
             >
-              <X
-                style={{ width: btnInnerSize, height: btnInnerSize }}
-                className="text-white opacity-0 group-hover/title:opacity-100"
-              />
+              <motion.div style={{ width: btnInnerSize, height: btnInnerSize }} className="flex items-center justify-center">
+                <X className="w-full h-full text-white opacity-0 group-hover/title:opacity-100" />
+              </motion.div>
             </motion.button>
             <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-yellow-500/40" />
             <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-green-500/40" />
@@ -258,7 +257,9 @@ export function StreamWidget({
             style={{ fontSize: titleFontSize }}
             className="font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2 select-none"
           >
-            <Monitor style={{ width: iconSize, height: iconSize }} className="text-blue-500" />
+            <motion.div style={{ width: iconSize, height: iconSize }} className="flex items-center justify-center">
+              <Monitor className="w-full h-full text-blue-500" />
+            </motion.div>
             {trackReference.participant.name || "Anonymous"}'s Screen
             {audioTrack ? (
               <div

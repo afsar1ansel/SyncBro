@@ -23,9 +23,11 @@ import {
   MonitorOff,
   Mic,
   MicOff,
+  Smile,
 } from "lucide-react";
 import { useScreenShare } from "@/hooks/useScreenShare";
 import { StreamWidget } from "./StreamWidget";
+import { GiphyPicker } from "./GiphyPicker";
 
 interface RoomCanvasProps {
   roomId: string;
@@ -52,6 +54,7 @@ export function RoomCanvas({
     removeWidget,
   } = useWidgets(roomId);
   const { screenToWorld } = useCanvas();
+  const [showGiphy, setShowGiphy] = useState(false);
 
   const handleSpawnBox = () => {
     const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
@@ -74,6 +77,19 @@ export function RoomCanvas({
       text: "",
       color: "#fef08a",
     });
+  };
+
+  const handleSpawnGif = (url: string) => {
+    const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
+    const WORKSPACE_SIZE = 5000;
+    const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+    
+    const x = clamp(center.x - 150, 0, WORKSPACE_SIZE - 300);
+    const y = clamp(center.y - 150, 0, WORKSPACE_SIZE - 300);
+    placeWidget(x, y, "GIF", {
+      url: url,
+    });
+    setShowGiphy(false);
   };
 
   const remoteParticipants = useRemoteParticipants();
@@ -141,6 +157,19 @@ export function RoomCanvas({
                 icon={<StickyNote size={20} />}
                 label="Sticky Note"
               />
+              <div className="relative flex items-center">
+                <ToolButton
+                  active={showGiphy}
+                  onClick={() => setShowGiphy(!showGiphy)}
+                  icon={<Smile size={20} />}
+                  label="GIFs"
+                />
+                {showGiphy && (
+                  <div className="absolute bottom-[calc(100%+16px)] left-1/2 -translate-x-1/2">
+                    <GiphyPicker onSelect={handleSpawnGif} />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Divider */}

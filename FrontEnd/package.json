@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@giphy/js-fetch-api": "^5.7.0",
+    "@giphy/react-components": "^10.1.2",
     "@livekit/components-react": "^2.9.20",
     "@livekit/components-styles": "^1.2.0",
     "clsx": "^2.1.1",

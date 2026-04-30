@@ -4,7 +4,7 @@ import React, { useRef, useCallback, useEffect } from "react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import { useCanvas } from "@/context/CanvasContext";
 import type { WidgetData } from "@/hooks/useWidgets";
-import { X, Palette, Type } from "lucide-react";
+import { X, Palette, Type, Image as ImageIcon } from "lucide-react";
 
 interface WidgetProps {
   widget: WidgetData;
@@ -36,8 +36,8 @@ export function Widget({
   const mvH = useMotionValue(widget.height || 150);
 
   const scale = useTransform([mvW, mvH], ([w, h]) => {
-    const baseW = widget.type === "STICKY" ? 250 : 200;
-    const baseH = widget.type === "STICKY" ? 250 : 150;
+    const baseW = widget.type === "STICKY" ? 250 : widget.type === "GIF" ? 300 : 200;
+    const baseH = widget.type === "STICKY" ? 250 : widget.type === "GIF" ? 300 : 150;
     return Math.min((w as number) / baseW, (h as number) / baseH);
   });
 
@@ -266,10 +266,9 @@ export function Widget({
               style={{ width: btnSize, height: btnSize }}
               className="rounded-full bg-red-500/40 hover:bg-red-500 transition-colors flex items-center justify-center group-hover/title:bg-red-500"
             >
-              <X
-                style={{ width: btnInnerSize, height: btnInnerSize }}
-                className="text-white opacity-0 group-hover/title:opacity-100"
-              />
+              <motion.div style={{ width: btnInnerSize, height: btnInnerSize }} className="flex items-center justify-center">
+                <X className="w-full h-full text-white opacity-0 group-hover/title:opacity-100" />
+              </motion.div>
             </motion.button>
             <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-yellow-500/40" />
             <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-green-500/40" />
@@ -279,11 +278,15 @@ export function Widget({
             style={{ fontSize: titleFontSize }}
             className="text-zinc-400 font-bold uppercase tracking-widest select-none flex items-center gap-2"
           >
-            {widget.type === "STICKY" ? (
-              <Type style={{ width: titleFontSize, height: titleFontSize }} />
-            ) : (
-              <Palette style={{ width: titleFontSize, height: titleFontSize }} />
-            )}
+            <motion.div style={{ width: titleFontSize, height: titleFontSize }} className="flex items-center justify-center">
+              {widget.type === "STICKY" ? (
+                <Type className="w-full h-full" />
+              ) : widget.type === "GIF" ? (
+                <ImageIcon className="w-full h-full" />
+              ) : (
+                <Palette className="w-full h-full" />
+              )}
+            </motion.div>
             {widget.type}
           </motion.span>
 
@@ -336,6 +339,14 @@ export function Widget({
                 )}
               </div>
             </>
+          ) : widget.type === "GIF" ? (
+            <div className="flex-1 w-full h-full p-2 flex items-center justify-center">
+              <img 
+                src={(widget.data as any)?.url} 
+                alt="GIF" 
+                className="max-w-full max-h-full object-contain rounded-xl pointer-events-none" 
+              />
+            </div>
           ) : (
             <div
               className="flex-1 flex flex-col items-center justify-center p-3 relative group/box"
