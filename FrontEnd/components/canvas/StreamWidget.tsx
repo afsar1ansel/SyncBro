@@ -19,6 +19,7 @@ interface StreamWidgetProps {
     w: number,
     h: number,
   ) => void;
+  onDrag?: (x: number, y: number, w: number, h: number) => void;
   onFocus: (widgetId: string) => void;
   onRemove: (widgetId: string) => void;
 }
@@ -28,6 +29,7 @@ export function StreamWidget({
   trackReference,
   audioTrack,
   onMove,
+  onDrag,
   onFocus,
   onRemove,
 }: StreamWidgetProps) {
@@ -127,12 +129,17 @@ export function StreamWidget({
 
         mvX.set(newX);
         mvY.set(newY);
+
+        if (onDrag) {
+          onDrag(newX, newY, mvW.get(), mvH.get());
+        }
       };
 
       const onMouseUp = () => {
         if (isDragging.current) {
           skipNextLayoutSync.current = true;
           onMove(widget.id, mvX.get(), mvY.get(), mvW.get(), mvH.get());
+          if (onDrag) onDrag(-1, -1, 0, 0);
         }
         isDragging.current = false;
         window.removeEventListener("mousemove", onMouseMove);
@@ -142,7 +149,7 @@ export function StreamWidget({
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     },
-    [widget.id, zoom, onMove, onFocus, mvX, mvY, mvW, mvH],
+    [widget.id, zoom, onMove, onDrag, onFocus, mvX, mvY, mvW, mvH],
   );
 
   const onResizeStart = useCallback(

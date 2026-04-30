@@ -15,6 +15,7 @@ interface WidgetProps {
     w: number,
     h: number,
   ) => void;
+  onDrag?: (x: number, y: number, w: number, h: number) => void;
   onFocus: (widgetId: string) => void;
   onUpdateData: (widgetId: string, data: any) => void;
   onRemove: (widgetId: string) => void;
@@ -23,11 +24,15 @@ interface WidgetProps {
 export function Widget({
   widget,
   onMove,
+  onDrag,
   onFocus,
   onUpdateData,
   onRemove,
 }: WidgetProps) {
   const { zoom } = useCanvas();
+
+  const isCutout = widget.type === "IMAGE";
+  const isGiphy = isCutout; // Alias for clarity in body
 
   // Local motion values for buttery smooth movement without re-renders
   const mvX = useMotionValue(widget.x);
@@ -36,13 +41,13 @@ export function Widget({
   const mvH = useMotionValue(widget.height || 150);
 
   const scale = useTransform([mvW, mvH], ([w, h]) => {
-    const baseW = widget.type === "STICKY" ? 250 : widget.type === "GIF" ? 300 : 200;
-    const baseH = widget.type === "STICKY" ? 250 : widget.type === "GIF" ? 300 : 150;
+    const baseW = widget.type === "STICKY" ? 250 : isGiphy ? 300 : 200;
+    const baseH = widget.type === "STICKY" ? 250 : isGiphy ? 300 : 150;
     return Math.min((w as number) / baseW, (h as number) / baseH);
   });
 
-  const btnSize = useTransform(scale, (s) => 12 * s);
-  const btnInnerSize = useTransform(scale, (s) => 8 * s);
+  const btnSize = useTransform(scale, (s) => 24 * s);
+  const btnInnerSize = useTransform(scale, (s) => 12 * s);
   const titleFontSize = useTransform(scale, (s) => 10 * s);
   const timeFontSize = useTransform(scale, (s) => 9 * s);
   const textFontSize = useTransform(scale, (s) => 14 * s);
@@ -131,6 +136,10 @@ export function Widget({
         // Update local motion values instantly (no re-render, no API)
         mvX.set(newX);
         mvY.set(newY);
+
+        if (onDrag) {
+          onDrag(newX, newY, mvW.get(), mvH.get());
+        }
       };
 
       const onMouseUp = () => {
@@ -138,6 +147,7 @@ export function Widget({
           skipNextLayoutSync.current = true;
           // Commit the final position to global state and API
           onMove(widget.id, mvX.get(), mvY.get(), mvW.get(), mvH.get());
+          if (onDrag) onDrag(-1, -1, 0, 0); // Special value to indicate drag end
         }
         isDragging.current = false;
         window.removeEventListener("mousemove", onMouseMove);
@@ -147,7 +157,7 @@ export function Widget({
       window.addEventListener("mousemove", onMouseMove);
       window.addEventListener("mouseup", onMouseUp);
     },
-    [widget.id, zoom, onMove, onFocus, mvX, mvY, mvW, mvH],
+    [widget.id, zoom, onMove, onDrag, onFocus, mvX, mvY, mvW, mvH],
   );
 
   const onResizeStart = useCallback(
@@ -246,61 +256,73 @@ export function Widget({
       className="group cursor-grab active:cursor-grabbing"
     >
       <div
-        className="w-full h-full rounded-2xl border border-blue-500/30 bg-zinc-900/80 backdrop-blur-md shadow-xl flex flex-col select-none relative overflow-hidden"
-        style={{
+        className={`w-full h-full rounded-2xl flex flex-col select-none relative overflow-visible transition-all duration-300 ${
+          isCutout 
+            ? "bg-transparent border-none shadow-none group-hover:bg-white/5" 
+            : "border border-blue-500/30 bg-zinc-900/80 backdrop-blur-md shadow-xl"
+        }`}
+        style={!isCutout ? {
           boxShadow:
             "0 0 0 1px rgba(59,130,246,0.15), 0 8px 32px rgba(0,0,0,0.4)",
-        }}
+        } : {}}
       >
-        {/* Drag handle bar / Title Bar */}
-        <div
-          className="flex items-center gap-2 px-3 py-2 bg-zinc-800/90 border-b border-white/5 cursor-grab active:cursor-grabbing group/title"
-          onMouseDown={onMouseDown}
-        >
-          <div className="flex gap-1.5 mr-2">
-            <motion.button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(widget.id);
-              }}
-              style={{ width: btnSize, height: btnSize }}
-              className="rounded-full bg-red-500/40 hover:bg-red-500 transition-colors flex items-center justify-center group-hover/title:bg-red-500"
+        {/* Drag handle bar / Title Bar (Hidden for cutouts) */}
+        {!isCutout && (
+          <div
+            className="flex items-center gap-2 px-3 py-2 bg-zinc-800/90 border-b border-white/5 cursor-grab active:cursor-grabbing group/title"
+            onMouseDown={onMouseDown}
+          >
+            <div className="flex gap-1.5 mr-2">
+              <motion.button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(widget.id);
+                }}
+                style={{ width: btnSize, height: btnSize }}
+                className="rounded-full bg-red-500/40 hover:bg-red-500 transition-colors flex items-center justify-center group-hover/title:bg-red-500"
+              >
+                <motion.div style={{ width: btnInnerSize, height: btnInnerSize }} className="flex items-center justify-center">
+                  <X className="w-full h-full text-white opacity-0 group-hover/title:opacity-100" />
+                </motion.div>
+              </motion.button>
+              <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-yellow-500/40" />
+              <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-green-500/40" />
+            </div>
+
+            <motion.span 
+              style={{ fontSize: titleFontSize }}
+              className="text-zinc-400 font-bold uppercase tracking-widest select-none flex items-center gap-2"
             >
-              <motion.div style={{ width: btnInnerSize, height: btnInnerSize }} className="flex items-center justify-center">
-                <X className="w-full h-full text-white opacity-0 group-hover/title:opacity-100" />
-              </motion.div>
-            </motion.button>
-            <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-yellow-500/40" />
-            <motion.div style={{ width: btnSize, height: btnSize }} className="rounded-full bg-green-500/40" />
-          </div>
-
-          <motion.span 
-            style={{ fontSize: titleFontSize }}
-            className="text-zinc-400 font-bold uppercase tracking-widest select-none flex items-center gap-2"
-          >
-            <motion.div style={{ width: titleFontSize, height: titleFontSize }} className="flex items-center justify-center">
               {widget.type === "STICKY" ? (
-                <Type className="w-full h-full" />
-              ) : widget.type === "GIF" ? (
-                <ImageIcon className="w-full h-full" />
+                <Type size={10} />
+              ) : isGiphy ? (
+                <ImageIcon size={10} />
               ) : (
-                <Palette className="w-full h-full" />
+                <Palette size={10} />
               )}
-            </motion.div>
-            {widget.type}
-          </motion.span>
+              {widget.type}
+            </motion.span>
+          </div>
+        )}
 
-          <motion.span 
-            style={{ fontSize: timeFontSize }}
-            className="ml-auto text-zinc-600 font-mono"
+        {/* Sticker Delete Button (Floating) */}
+        {isCutout && (
+          <motion.button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(widget.id);
+            }}
+            initial={{ opacity: 0 }}
+            whileHover={{ scale: 1.1 }}
+            className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-red-500 text-white shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-50 pointer-events-auto"
           >
-            {Math.round(widget.width)}x{Math.round(widget.height)}
-          </motion.span>
-        </div>
+            <X size={16} />
+          </motion.button>
+        )}
 
         {/* Widget body */}
         <div
-          className="flex-1 flex flex-col p-0 overflow-hidden"
+          className={`flex-1 flex flex-col p-0 overflow-hidden ${isCutout ? "overflow-visible" : ""}`}
           style={{
             backgroundColor:
               widget.type === "STICKY"
@@ -339,12 +361,12 @@ export function Widget({
                 )}
               </div>
             </>
-          ) : widget.type === "GIF" ? (
-            <div className="flex-1 w-full h-full p-2 flex items-center justify-center">
+          ) : isGiphy ? (
+            <div className={`flex-1 w-full h-full flex items-center justify-center ${isCutout ? "" : "p-2"}`}>
               <img 
                 src={(widget.data as any)?.url} 
-                alt="GIF" 
-                className="max-w-full max-h-full object-contain rounded-xl pointer-events-none" 
+                alt="Giphy Content" 
+                className={`max-w-full max-h-full object-contain pointer-events-none ${isCutout ? "" : "rounded-xl"}`} 
               />
             </div>
           ) : (

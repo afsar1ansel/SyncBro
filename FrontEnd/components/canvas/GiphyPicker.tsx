@@ -7,7 +7,7 @@ import { Grid, SearchBar, SearchContext, SearchContextManager } from '@giphy/rea
 const GIPHY_API_KEY = process.env.NEXT_PUBLIC_GIPHY_API_KEY || '';
 
 interface GiphyPickerProps {
-  onSelect: (gifUrl: string) => void;
+  onSelect: (gifUrl: string, isSticker: boolean) => void;
 }
 
 interface GiphyExperienceProps extends GiphyPickerProps {
@@ -60,7 +60,7 @@ const GiphyExperience: React.FC<GiphyExperienceProps> = ({ onSelect, contentType
           noLink={true}
           onGifClick={(gif, e) => {
             e.preventDefault();
-            onSelect(gif.images.original.url);
+            onSelect(gif.images.original.url, contentType === 'stickers');
           }}
         />
       </div>
