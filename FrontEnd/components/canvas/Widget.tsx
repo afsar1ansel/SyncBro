@@ -34,7 +34,7 @@ export function Widget({
   const isCutout = widget.type === "IMAGE";
   const isGiphy = isCutout; // Alias for clarity in body
 
-  // Local motion values for buttery smooth movement without re-renders
+  // Local motion values
   const mvX = useMotionValue(widget.x);
   const mvY = useMotionValue(widget.y);
   const mvW = useMotionValue(widget.width || 200);

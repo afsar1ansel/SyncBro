@@ -75,7 +75,10 @@ export function ChatPanel({
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div 
+        onWheel={(e) => e.stopPropagation()}
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+      >
         {messages.map((msg, idx) => {
           const isMe = msg.senderId === user?.id;
           const showAvatar = !isMe && (idx === 0 || messages[idx - 1].senderId !== msg.senderId);
@@ -130,7 +133,10 @@ export function ChatPanel({
       {/* Input Area */}
       <div className="p-3 border-t border-white/5 shrink-0 bg-zinc-900 relative">
         {showEmojiPicker && (
-          <div className="absolute bottom-full right-0 mb-4 z-50">
+          <div 
+            onWheel={(e) => e.stopPropagation()}
+            className="absolute bottom-full right-0 mb-4 z-50"
+          >
             <div className="shadow-2xl rounded-2xl overflow-hidden border border-white/10">
               <EmojiPicker
                 theme={Theme.DARK}

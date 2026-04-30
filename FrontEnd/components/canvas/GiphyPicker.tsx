@@ -19,7 +19,10 @@ const GiphyExperience: React.FC<GiphyExperienceProps> = ({ onSelect, contentType
   const { fetchGifs, searchKey } = useContext(SearchContext);
 
   return (
-    <div className="w-[300px] h-[400px] flex flex-col bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+    <div 
+      onWheel={(e) => e.stopPropagation()}
+      className="w-[300px] h-[400px] flex flex-col bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+    >
       <div className="p-2 border-b border-white/5 bg-zinc-950">
         <SearchBar 
           className="giphy-search-bar" 

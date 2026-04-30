@@ -115,6 +115,12 @@ export function InfiniteCanvas({
   // ── Zoom: scroll wheel centered on cursor ──────────────────────────────
   const onWheel = useCallback(
     (e: WheelEvent) => {
+      // If the event target is inside a scrollable element, let it scroll naturally
+      const target = e.target as HTMLElement;
+      if (target.closest('.overflow-y-auto, .overflow-auto, .giphy-search-bar')) {
+        return;
+      }
+
       e.preventDefault();
       const rect = containerRef.current!.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
