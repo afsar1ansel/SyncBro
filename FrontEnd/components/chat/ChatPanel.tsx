@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { Send, X } from "lucide-react";
+import { Send, X, Smile } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import type { ChatMessage } from "@/hooks/useChat";
+import EmojiPicker, { Theme } from "emoji-picker-react";
 
 interface ChatPanelProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const { user } = useAuth();
   const [inputValue, setInputValue] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change
@@ -45,9 +47,14 @@ export function ChatPanel({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
+      setShowEmojiPicker(false);
     } else {
       handleTyping();
     }
+  };
+
+  const onEmojiClick = (emojiData: { emoji: string }) => {
+    setInputValue((prev) => prev + emojiData.emoji);
   };
 
   return (
@@ -121,25 +128,50 @@ export function ChatPanel({
       </div>
 
       {/* Input Area */}
-      <div className="p-3 border-t border-white/5 shrink-0 bg-zinc-900">
+      <div className="p-3 border-t border-white/5 shrink-0 bg-zinc-900 relative">
+        {showEmojiPicker && (
+          <div className="absolute bottom-full right-0 mb-4 z-50">
+            <div className="shadow-2xl rounded-2xl overflow-hidden border border-white/10">
+              <EmojiPicker
+                theme={Theme.DARK}
+                onEmojiClick={onEmojiClick}
+                width={300}
+                height={400}
+                skinTonesDisabled
+                searchPlaceholder="Search emoji..."
+              />
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="relative flex items-end gap-2">
-          <textarea
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            className="w-full bg-zinc-800 text-white text-sm rounded-xl pl-3 pr-10 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none max-h-32 min-h-[44px]"
-            rows={1}
-            style={{
-              height: inputValue ? 'auto' : '44px',
-            }}
-          />
+          <div className="relative flex-1">
+            <textarea
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              className="w-full bg-zinc-800 text-white text-sm rounded-xl pl-3 pr-10 py-2.5 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none max-h-32 min-h-[44px]"
+              rows={1}
+              style={{
+                height: inputValue ? 'auto' : '44px',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className={`absolute right-3 bottom-2.5 p-1 rounded-md transition-colors ${
+                showEmojiPicker ? "text-blue-500 bg-blue-500/10" : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              <Smile size={18} />
+            </button>
+          </div>
           <button
             type="submit"
             disabled={!inputValue.trim()}
-            className="absolute right-2 bottom-2 p-1.5 rounded-lg text-blue-500 hover:bg-blue-500/10 disabled:text-zinc-600 disabled:hover:bg-transparent transition-colors"
+            className="p-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
           >
-            <Send size={16} />
+            <Send size={18} />
           </button>
         </form>
       </div>
