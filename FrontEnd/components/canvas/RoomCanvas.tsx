@@ -122,7 +122,7 @@ export function RoomCanvas({
     });
   };
 
-  const handleSpawnGif = (url: string, isSticker: boolean) => {
+  const handleSpawnGif = (url: string) => {
     const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
     const WORKSPACE_SIZE = 5000;
     const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
@@ -132,8 +132,7 @@ export function RoomCanvas({
     
     // Use "IMAGE" type which is supported by the server's WidgetType enum
     placeWidget(x, y, "IMAGE", {
-      url: url,
-      isSticker: isSticker
+      url: url
     });
     setShowGiphy(false);
   };
