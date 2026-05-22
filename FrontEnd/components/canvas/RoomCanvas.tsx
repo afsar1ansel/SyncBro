@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { InfiniteCanvas } from "./InfiniteCanvas";
 import { useCanvas } from "@/context/CanvasContext";
 import { useCursors } from "@/hooks/useCursors";
-import { useWidgets } from "@/hooks/useWidgets";
 import { GhostCursor } from "./GhostCursor";
 import { Widget } from "./Widget";
 import { VoiceOrb } from "../voice/VoiceOrb";
@@ -37,6 +36,12 @@ interface RoomCanvasProps {
   onToggleMic: () => void;
   participantVolumes: Record<string, number>;
   onUpdateVolume: (userId: string, volume: number) => void;
+  widgets: any[];
+  placeWidget: (x: number, y: number, type?: string, data?: any) => void;
+  moveWidget: (widgetId: string, x: number, y: number, width: number, height: number) => void;
+  focusWidget: (widgetId: string) => void;
+  updateWidgetData: (widgetId: string, data: any) => void;
+  removeWidget: (widgetId: string) => void;
 }
 
 export function RoomCanvas({
@@ -45,16 +50,14 @@ export function RoomCanvas({
   onToggleMic,
   participantVolumes,
   onUpdateVolume,
+  widgets,
+  placeWidget,
+  moveWidget,
+  focusWidget,
+  updateWidgetData,
+  removeWidget,
 }: RoomCanvasProps) {
   const otherCursors = useCursors(roomId);
-  const {
-    widgets,
-    placeWidget,
-    moveWidget,
-    focusWidget,
-    updateWidgetData,
-    removeWidget,
-  } = useWidgets(roomId);
   const { screenToWorld, worldToScreen } = useCanvas();
   const [showGiphy, setShowGiphy] = useState(false);
   const [isDraggingNearTrash, setIsDraggingNearTrash] = useState(false);

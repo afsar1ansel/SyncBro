@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 interface RequestOptions extends RequestInit {
   data?: any;
@@ -6,9 +6,9 @@ interface RequestOptions extends RequestInit {
 
 export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { data, ...init } = options;
-  
+
   const headers = new Headers(init.headers);
-  
+
   // Attach token if exists in localStorage
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("auth_token");
@@ -38,12 +38,12 @@ export async function apiFetch<T>(endpoint: string, options: RequestOptions = {}
 }
 
 export const api = {
-  get: <T>(endpoint: string, options?: RequestOptions) => 
+  get: <T>(endpoint: string, options?: RequestOptions) =>
     apiFetch<T>(endpoint, { ...options, method: "GET" }),
-  post: <T>(endpoint: string, data?: any, options?: RequestOptions) => 
+  post: <T>(endpoint: string, data?: any, options?: RequestOptions) =>
     apiFetch<T>(endpoint, { ...options, method: "POST", data }),
-  put: <T>(endpoint: string, data?: any, options?: RequestOptions) => 
+  put: <T>(endpoint: string, data?: any, options?: RequestOptions) =>
     apiFetch<T>(endpoint, { ...options, method: "PUT", data }),
-  delete: <T>(endpoint: string, options?: RequestOptions) => 
+  delete: <T>(endpoint: string, options?: RequestOptions) =>
     apiFetch<T>(endpoint, { ...options, method: "DELETE" }),
 };

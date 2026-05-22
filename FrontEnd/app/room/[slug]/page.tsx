@@ -10,6 +10,7 @@ import { RoomCanvas } from "@/components/canvas/RoomCanvas";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { useChat } from "@/hooks/useChat";
 import { useLiveKit } from "@/hooks/useLiveKit";
+import { useWidgets } from "@/hooks/useWidgets";
 import { Loader2, Users, ArrowLeft, Share, Check, MessageSquare, Mic, MicOff, MonitorUp, Volume2, VolumeX, ChevronDown } from "lucide-react";
 import { LiveKitRoom, useRemoteParticipants, useLocalParticipant } from "@livekit/components-react";
 import "@livekit/components-styles";
@@ -44,6 +45,16 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   // Chat hook
   const { messages, sendMessage, typingUsers, handleTyping } = useChat(room?.id);
+  
+  // Widgets hook
+  const {
+    widgets,
+    placeWidget,
+    moveWidget,
+    focusWidget,
+    updateWidgetData,
+    removeWidget,
+  } = useWidgets(room?.id || "");
   
   // LiveKit (Media) hook - connects automatically
   const { token, serverUrl } = useLiveKit(room?.id);
@@ -304,6 +315,12 @@ export default function RoomPage({ params }: RoomPageProps) {
                 onToggleMic={() => setIsMicEnabled(!isMicEnabled)} 
                 participantVolumes={participantVolumes}
                 onUpdateVolume={updateVolume}
+                widgets={widgets}
+                placeWidget={placeWidget}
+                moveWidget={moveWidget}
+                focusWidget={focusWidget}
+                updateWidgetData={updateWidgetData}
+                removeWidget={removeWidget}
               />
             </CanvasProvider>
           </main>
