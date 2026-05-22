@@ -61,10 +61,12 @@ export function RoomCanvas({
   const { screenToWorld, worldToScreen } = useCanvas();
   const [showGiphy, setShowGiphy] = useState(false);
   const [isDraggingNearTrash, setIsDraggingNearTrash] = useState(false);
+  const [isHoveringTrash, setIsHoveringTrash] = useState(false);
 
   const handleWidgetDrag = useCallback((x: number, y: number, w: number, h: number) => {
     if (x === -1) {
       setIsDraggingNearTrash(false);
+      setIsHoveringTrash(false);
       return;
     }
 
@@ -78,10 +80,13 @@ export function RoomCanvas({
     );
 
     setIsDraggingNearTrash(dist < 300); // Show when within 300px
+    setIsHoveringTrash(dist < 120);    // Highlight active delete zone within 120px
   }, [worldToScreen]);
 
   const handleMoveWidget = useCallback((id: string, x: number, y: number, w: number, h: number) => {
     setIsDraggingNearTrash(false);
+    setIsHoveringTrash(false);
+    
     // Trash area is roughly at bottom-right corner
     const trashScreenX = window.innerWidth - 80;
     const trashScreenY = window.innerHeight - 80;
@@ -95,7 +100,7 @@ export function RoomCanvas({
       Math.pow(widgetCenterScreen.y - trashScreenY, 2)
     );
 
-    if (dist < 60) {
+    if (dist < 120) { // Generous delete radius matching the hover threshold
       removeWidget(id);
     } else {
       moveWidget(id, x, y, w, h);
@@ -258,11 +263,17 @@ export function RoomCanvas({
                 initial={{ opacity: 0, scale: 0.5, y: 50 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.5, y: 50 }}
-                className="absolute bottom-8 right-8 pointer-events-auto"
+                className="absolute bottom-8 right-8 pointer-events-auto z-[9999]"
               >
-                <div className="p-5 rounded-full bg-red-500/10 border border-red-500/20 text-red-500/50 backdrop-blur-xl shadow-2xl transition-all duration-300 hover:bg-red-500 hover:text-white hover:border-red-500 hover:scale-110 flex items-center justify-center group">
-                  <Trash2 size={28} className="group-hover:animate-bounce" />
-                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+                <div className={`p-5 rounded-full backdrop-blur-xl shadow-2xl transition-all duration-300 flex items-center justify-center group ${
+                  isHoveringTrash 
+                    ? "bg-red-500 text-white border-red-500 scale-125 shadow-[0_0_35px_rgba(239,68,68,0.7)]" 
+                    : "bg-red-500/10 border border-red-500/20 text-red-500/50 hover:bg-red-500 hover:text-white hover:border-red-500 hover:scale-110"
+                }`}>
+                  <Trash2 size={28} className={isHoveringTrash ? "animate-bounce" : "group-hover:animate-bounce"} />
+                  <div className={`absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-lg bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest transition-opacity whitespace-nowrap shadow-xl ${
+                    isHoveringTrash ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  }`}>
                     Drop to Delete
                   </div>
                 </div>
