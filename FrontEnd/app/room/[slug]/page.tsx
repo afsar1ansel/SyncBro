@@ -123,6 +123,18 @@ const playLeaveSound = () => {
   }
 };
 
+const playMemeSound = (src: string) => {
+  try {
+    const audio = new Audio(src);
+    audio.volume = 0.45; // Sweet spot volume
+    audio.play().catch((err) => {
+      console.warn("Meme sound playback was blocked by browser autoplay policy:", err);
+    });
+  } catch (error) {
+    console.warn("Failed to play meme sound:", error);
+  }
+};
+
 interface RoomPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -169,17 +181,28 @@ export default function RoomPage({ params }: RoomPageProps) {
     setParticipantVolumes(prev => ({ ...prev, [userId]: volume }));
   };
 
-  // Notification logic: track unread messages
+  // Real-time message detection (notifications and meme sounds)
   const prevMsgCount = useRef(messages.length);
   useEffect(() => {
-    if (!isChatOpen && messages.length > prevMsgCount.current) {
-      setHasUnread(true);
-      
-      // Play a subtle notification sound for incoming texts (if not our own message)
+    if (messages.length > prevMsgCount.current) {
       const lastMsg = messages[messages.length - 1];
-      const isOwnMessage = lastMsg && user && lastMsg.senderId === user.id;
-      if (!isOwnMessage) {
-        playNotificationSound();
+      if (lastMsg) {
+        const cleanText = lastMsg.content.trim().toLowerCase();
+        
+        // Check for specific meme sound triggers (plays for everyone, open or closed chat)
+        if (cleanText === "bruh") {
+          playMemeSound("/sounds/bruh.mp3");
+        } else if (cleanText === "faak") {
+          playMemeSound("/sounds/faaah.mp3");
+        } 
+        // Otherwise trigger standard unread notification if chat panel is closed
+        else if (!isChatOpen) {
+          setHasUnread(true);
+          const isOwnMessage = user && lastMsg.senderId === user.id;
+          if (!isOwnMessage) {
+            playNotificationSound();
+          }
+        }
       }
     }
     prevMsgCount.current = messages.length;
