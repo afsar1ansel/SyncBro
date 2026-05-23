@@ -57,6 +57,39 @@ const playNotificationSound = () => {
   }
 };
 
+const playJoinSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    
+    const playChime = (time: number, freq: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, time);
+      
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(0.08, time + 0.04); // subtle attack phase
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(time);
+      osc.stop(time + duration);
+    };
+    
+    // Welcome chime (arpeggio style): 3 warm tones sliding upwards for a positive "arrival" feel
+    playChime(ctx.currentTime, 329.63, 0.4);       // E4 note
+    playChime(ctx.currentTime + 0.1, 392.00, 0.45);  // G4 note
+    playChime(ctx.currentTime + 0.2, 523.25, 0.5);   // C5 note
+  } catch (error) {
+    console.warn("Failed to play join sound:", error);
+  }
+};
+
 interface RoomPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -181,6 +214,7 @@ export default function RoomPage({ params }: RoomPageProps) {
       } else {
         setOnlineCount((c) => c + 1);
       }
+      playJoinSound();
     };
 
     const onUserLeft = ({ onlineCount: count }: { onlineCount?: number }) => {
