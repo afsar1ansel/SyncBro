@@ -154,8 +154,25 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [hasUnread, setHasUnread] = useState(false);
   const socketRef = useRef(socketService.getSocket());
 
-  // Chat hook
-  const { messages, sendMessage, typingUsers, handleTyping } = useChat(room?.id);
+  // Chat hook with real-time audio alert triggers
+  const { messages, sendMessage, typingUsers, handleTyping } = useChat(room?.id, (msg) => {
+    const cleanText = msg.content.trim().toLowerCase();
+    
+    // Check for specific meme sound triggers (plays for everyone, open or closed chat)
+    if (cleanText === "bruh") {
+      playMemeSound("/sounds/bruh.mp3");
+    } else if (cleanText === "faak") {
+      playMemeSound("/sounds/faaah.mp3");
+    } 
+    // Otherwise trigger standard unread notification if chat panel is closed
+    else if (!isChatOpen) {
+      setHasUnread(true);
+      const isOwnMessage = user && msg.senderId === user.id;
+      if (!isOwnMessage) {
+        playNotificationSound();
+      }
+    }
+  });
   
   // Widgets hook
   const {
@@ -181,32 +198,7 @@ export default function RoomPage({ params }: RoomPageProps) {
     setParticipantVolumes(prev => ({ ...prev, [userId]: volume }));
   };
 
-  // Real-time message detection (notifications and meme sounds)
-  const prevMsgCount = useRef(messages.length);
-  useEffect(() => {
-    if (messages.length > prevMsgCount.current) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg) {
-        const cleanText = lastMsg.content.trim().toLowerCase();
-        
-        // Check for specific meme sound triggers (plays for everyone, open or closed chat)
-        if (cleanText === "bruh") {
-          playMemeSound("/sounds/bruh.mp3");
-        } else if (cleanText === "faak") {
-          playMemeSound("/sounds/faaah.mp3");
-        } 
-        // Otherwise trigger standard unread notification if chat panel is closed
-        else if (!isChatOpen) {
-          setHasUnread(true);
-          const isOwnMessage = user && lastMsg.senderId === user.id;
-          if (!isOwnMessage) {
-            playNotificationSound();
-          }
-        }
-      }
-    }
-    prevMsgCount.current = messages.length;
-  }, [messages.length, isChatOpen, user]);
+
 
   // Clear unread when chat opens
   useEffect(() => {

@@ -16,10 +16,18 @@ export interface ChatMessage {
   };
 }
 
-export function useChat(roomId: string | undefined) {
+export function useChat(
+  roomId: string | undefined,
+  onMessageReceived?: (msg: ChatMessage) => void
+) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [typingUsers, setTypingUsers] = useState<Map<string, string>>(new Map());
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const onMessageReceivedRef = useRef(onMessageReceived);
+
+  useEffect(() => {
+    onMessageReceivedRef.current = onMessageReceived;
+  }, [onMessageReceived]);
 
   // Fetch initial messages
   useEffect(() => {
@@ -48,6 +56,9 @@ export function useChat(roomId: string | undefined) {
 
     const onNewMessage = (msg: ChatMessage) => {
       setMessages((prev) => [...prev, msg]);
+      if (onMessageReceivedRef.current) {
+        onMessageReceivedRef.current(msg);
+      }
     };
 
     const onUserTyping = ({ userId, name, isTyping }: { userId: string; name: string; isTyping: boolean }) => {

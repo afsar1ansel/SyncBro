@@ -15,7 +15,32 @@ interface VoiceOrbProps {
 }
 
 export function VoiceOrb({ participant, x, y, volume, onVolumeChange }: VoiceOrbProps) {
-  const isSpeaking = useIsSpeaking(participant);
+  const [isMuted, setIsMuted] = React.useState(!participant.isMicrophoneEnabled);
+
+  useEffect(() => {
+    const handleMuteChange = () => {
+      setIsMuted(!participant.isMicrophoneEnabled);
+    };
+
+    participant.on("trackMuted", handleMuteChange);
+    participant.on("trackUnmuted", handleMuteChange);
+    participant.on("trackPublished", handleMuteChange);
+    participant.on("trackUnpublished", handleMuteChange);
+    participant.on("trackSubscribed", handleMuteChange);
+    participant.on("trackUnsubscribed", handleMuteChange);
+    handleMuteChange();
+
+    return () => {
+      participant.off("trackMuted", handleMuteChange);
+      participant.off("trackUnmuted", handleMuteChange);
+      participant.off("trackPublished", handleMuteChange);
+      participant.off("trackUnpublished", handleMuteChange);
+      participant.off("trackSubscribed", handleMuteChange);
+      participant.off("trackUnsubscribed", handleMuteChange);
+    };
+  }, [participant]);
+
+  const isSpeaking = useIsSpeaking(participant) && !isMuted;
 
   // Apply volume to remote tracks
   useEffect(() => {
