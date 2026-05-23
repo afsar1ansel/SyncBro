@@ -90,6 +90,39 @@ const playJoinSound = () => {
   }
 };
 
+const playLeaveSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    
+    const playChime = (time: number, freq: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, time);
+      
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(0.08, time + 0.04); // subtle attack phase
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(time);
+      osc.stop(time + duration);
+    };
+    
+    // Departure chime (opposite arpeggio style): 3 warm tones sliding downwards for a soft "exit" feel
+    playChime(ctx.currentTime, 523.25, 0.4);       // C5 note
+    playChime(ctx.currentTime + 0.1, 392.00, 0.45);  // G4 note
+    playChime(ctx.currentTime + 0.2, 329.63, 0.5);   // E4 note
+  } catch (error) {
+    console.warn("Failed to play leave sound:", error);
+  }
+};
+
 interface RoomPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -223,6 +256,7 @@ export default function RoomPage({ params }: RoomPageProps) {
       } else {
         setOnlineCount((c) => Math.max(1, c - 1));
       }
+      playLeaveSound();
     };
 
     socket.on("room-joined", onRoomJoined);
