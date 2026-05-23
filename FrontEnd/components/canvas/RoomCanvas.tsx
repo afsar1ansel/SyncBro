@@ -109,7 +109,7 @@ export function RoomCanvas({
 
   const handleSpawnBox = () => {
     const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
-    const WORKSPACE_SIZE = 5000;
+    const WORKSPACE_SIZE = 3000;
     const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
     
     const x = clamp(center.x - 100, 0, WORKSPACE_SIZE - 200);
@@ -119,7 +119,7 @@ export function RoomCanvas({
 
   const handleSpawnSticky = () => {
     const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
-    const WORKSPACE_SIZE = 5000;
+    const WORKSPACE_SIZE = 3000;
     const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
     
     const x = clamp(center.x - 125, 0, WORKSPACE_SIZE - 250);
@@ -132,7 +132,7 @@ export function RoomCanvas({
 
   const handleSpawnGif = (url: string) => {
     const center = screenToWorld(window.innerWidth / 2, window.innerHeight / 2);
-    const WORKSPACE_SIZE = 5000;
+    const WORKSPACE_SIZE = 3000;
     const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
     
     const x = clamp(center.x - 150, 0, WORKSPACE_SIZE - 300);

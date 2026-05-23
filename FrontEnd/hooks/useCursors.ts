@@ -26,7 +26,7 @@ export function useCursors(roomId: string) {
     // Note: This hook assumes it's used within a CanvasProvider
     const world = screenToWorld(e.clientX, e.clientY);
     
-    const WORKSPACE_SIZE = 5000;
+    const WORKSPACE_SIZE = 3000;
     const clampedX = Math.max(0, Math.min(WORKSPACE_SIZE, world.x));
     const clampedY = Math.max(0, Math.min(WORKSPACE_SIZE, world.y));
 

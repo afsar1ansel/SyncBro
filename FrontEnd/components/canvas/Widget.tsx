@@ -117,7 +117,7 @@ export function Widget({
         const dxScreen = moveEvent.clientX - dragStart.current.mouseX;
         const dyScreen = moveEvent.clientY - dragStart.current.mouseY;
 
-        const WORKSPACE_SIZE = 5000;
+        const WORKSPACE_SIZE = 3000;
         const newX = Math.max(
           0,
           Math.min(
@@ -185,7 +185,7 @@ export function Widget({
         const dxWorld = dxScreen / zoom;
         const dyWorld = dyScreen / zoom;
 
-        const WORKSPACE_SIZE = 5000;
+        const WORKSPACE_SIZE = 3000;
         let newX = dragStart.current.worldX;
         let newY = dragStart.current.worldY;
         let newW = dragStart.current.worldW;

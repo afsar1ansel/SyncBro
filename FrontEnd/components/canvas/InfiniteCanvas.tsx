@@ -10,8 +10,8 @@ interface InfiniteCanvasProps {
   activeTool?: "select" | "box" | "sticky";
 }
 
-const WORKSPACE_SIZE = 5000;
-const MIN_ZOOM = 0.1; // Lowered to show the whole room
+const WORKSPACE_SIZE = 3000;
+const MIN_ZOOM = 0.2; // Optimized for a cozy room
 const MAX_ZOOM = 4;
 const ZOOM_SENSITIVITY = 0.001;
 
@@ -72,20 +72,32 @@ export function InfiniteCanvas({
         
         const containerWidth = containerRef.current?.clientWidth || 0;
         const containerHeight = containerRef.current?.clientHeight || 0;
-        const margin = 200;
 
-        const minX = margin - WORKSPACE_SIZE * zoom;
-        const maxX = containerWidth - margin;
-        const minY = margin - WORKSPACE_SIZE * zoom;
-        const maxY = containerHeight - margin;
+        const workspaceWidth = WORKSPACE_SIZE * zoom;
+        const workspaceHeight = WORKSPACE_SIZE * zoom;
 
-        return {
-          x: Math.max(minX, Math.min(maxX, newX)),
-          y: Math.max(minY, Math.min(maxY, newY)),
-        };
+        let clampX: number;
+        if (workspaceWidth <= containerWidth) {
+          clampX = (containerWidth - workspaceWidth) / 2;
+        } else {
+          const minX = containerWidth - workspaceWidth;
+          const maxX = 0;
+          clampX = Math.max(minX, Math.min(maxX, newX));
+        }
+
+        let clampY: number;
+        if (workspaceHeight <= containerHeight) {
+          clampY = (containerHeight - workspaceHeight) / 2;
+        } else {
+          const minY = containerHeight - workspaceHeight;
+          const maxY = 0;
+          clampY = Math.max(minY, Math.min(maxY, newY));
+        }
+
+        return { x: clampX, y: clampY };
       });
     },
-    [setPanOffset, setLocalWorldPos, screenToWorld],
+    [setPanOffset, setLocalWorldPos, screenToWorld, zoom],
   );
 
   const onMouseUp = useCallback(
@@ -140,27 +152,30 @@ export function InfiniteCanvas({
 
           const containerWidth = containerRef.current?.clientWidth || 0;
           const containerHeight = containerRef.current?.clientHeight || 0;
-          const margin = 200;
 
-          const minX = margin - WORKSPACE_SIZE * newZoom;
-          const maxX = containerWidth - margin;
-          const minY = margin - WORKSPACE_SIZE * newZoom;
-          const maxY = containerHeight - margin;
+          const workspaceWidth = WORKSPACE_SIZE * newZoom;
+          const workspaceHeight = WORKSPACE_SIZE * newZoom;
 
-          return {
-            x: Math.max(minX, Math.min(maxX, calculatedX)),
-            y: Math.max(minY, Math.min(maxY, calculatedY)),
-          };
+          let clampX: number;
+          if (workspaceWidth <= containerWidth) {
+            clampX = (containerWidth - workspaceWidth) / 2;
+          } else {
+            const minX = containerWidth - workspaceWidth;
+            const maxX = 0;
+            clampX = Math.max(minX, Math.min(maxX, calculatedX));
+          }
+
+          let clampY: number;
+          if (workspaceHeight <= containerHeight) {
+            clampY = (containerHeight - workspaceHeight) / 2;
+          } else {
+            const minY = containerHeight - workspaceHeight;
+            const maxY = 0;
+            clampY = Math.max(minY, Math.min(maxY, calculatedY));
+          }
+
+          return { x: clampX, y: clampY };
         });
-
-        // After zoom, update world pos since zoom changed
-        const newWorld = {
-          x: (mouseX - (mouseX - panOffset.x) * (newZoom / zoom)) / newZoom,
-          y: (mouseY - (mouseY - panOffset.y) * (newZoom / zoom)) / newZoom,
-        };
-        // Wait, screenToWorld is easier if we call it after state updates, but here we are in setState
-        // Let's just let the next mouseMove catch it or compute it here.
-        // Actually, just calling screenToWorld with current panOffset and NEW zoom is enough.
 
         return newZoom;
       });
@@ -168,7 +183,7 @@ export function InfiniteCanvas({
       const world = screenToWorld(mouseX, mouseY);
       setLocalWorldPos(world);
     },
-    [setZoom, setPanOffset, setLocalWorldPos, screenToWorld, panOffset, zoom],
+    [setZoom, setPanOffset, setLocalWorldPos, screenToWorld],
   );
 
   // Attach wheel as non-passive so we can preventDefault
@@ -178,6 +193,46 @@ export function InfiniteCanvas({
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [onWheel]);
+
+  // Center or clamp on mount and window resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const handleResize = () => {
+      const containerWidth = containerRef.current?.clientWidth || 0;
+      const containerHeight = containerRef.current?.clientHeight || 0;
+      
+      setPanOffset((prev) => {
+        const workspaceWidth = WORKSPACE_SIZE * zoom;
+        const workspaceHeight = WORKSPACE_SIZE * zoom;
+        
+        let clampX: number;
+        if (workspaceWidth <= containerWidth) {
+          clampX = (containerWidth - workspaceWidth) / 2;
+        } else {
+          const minX = containerWidth - workspaceWidth;
+          const maxX = 0;
+          clampX = Math.max(minX, Math.min(maxX, prev.x));
+        }
+
+        let clampY: number;
+        if (workspaceHeight <= containerHeight) {
+          clampY = (containerHeight - workspaceHeight) / 2;
+        } else {
+          const minY = containerHeight - workspaceHeight;
+          const maxY = 0;
+          clampY = Math.max(minY, Math.min(maxY, prev.y));
+        }
+
+        return { x: clampX, y: clampY };
+      });
+    };
+
+    // Run initially and listen to resizing
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [zoom, setPanOffset]);
 
   // ── Space-key panning support ─────────────────────────────────────────
   useEffect(() => {
