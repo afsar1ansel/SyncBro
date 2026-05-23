@@ -135,7 +135,7 @@ export default function Home() {
             transition={{ duration: 1, delay: 0.2 }}
             className="grid grid-cols-2 gap-4 p-6 rounded-[40px] bg-white/5 border border-white/10 backdrop-blur-xl shadow-2xl relative overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5" />
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 pointer-events-none" />
             
             <FeatureCard 
               icon={<MessageSquare size={24} className="text-zinc-400" />} 
@@ -193,12 +193,14 @@ export default function Home() {
 
 function FeatureCard({ icon, title, color }: { icon: React.ReactNode, title: string, color: string }) {
   return (
-    <div className={`aspect-square md:aspect-video rounded-3xl ${color} border border-white/5 p-6 flex flex-col justify-center gap-4 hover:border-white/20 transition-all group`}>
-      <div className="w-12 h-12 rounded-2xl bg-zinc-900/50 flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform">
-        {icon}
+    <Link href="/dashboard" className="block relative z-10">
+      <div className={`aspect-square md:aspect-video rounded-3xl ${color} border border-white/5 p-6 flex flex-col justify-center gap-4 hover:border-white/20 hover:scale-[1.03] hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] active:scale-95 transition-all duration-300 cursor-pointer group`}>
+        <div className="w-12 h-12 rounded-2xl bg-zinc-900/50 flex items-center justify-center border border-white/5 group-hover:scale-110 transition-transform duration-300">
+          {icon}
+        </div>
+        <h3 className="font-bold text-zinc-300 tracking-tight group-hover:text-white transition-colors duration-300">{title}</h3>
       </div>
-      <h3 className="font-bold text-zinc-300 tracking-tight">{title}</h3>
-    </div>
+    </Link>
   );
 }
 

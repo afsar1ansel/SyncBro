@@ -7,7 +7,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Layout, Users, ChevronRight, Loader2, Trash2, Settings, LogOut, X, Globe, Lock } from "lucide-react";
+import { Plus, Layout, Users, ChevronRight, Loader2, Trash2, Settings, LogOut, X, Globe, Lock, ArrowLeft } from "lucide-react";
 
 interface Room {
   id: string;
@@ -94,6 +94,15 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 p-8 pt-24">
       <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <Link 
+            href="/" 
+            className="inline-flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors group"
+          >
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-300" />
+            Back to Home
+          </Link>
+        </div>
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div>
             <h1 className="text-4xl font-bold tracking-tight mb-2 bg-gradient-to-r from-white to-zinc-500 bg-clip-text text-transparent">
