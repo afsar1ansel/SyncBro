@@ -24,6 +24,39 @@ interface Room {
   ownerId: string;
 }
 
+const playNotificationSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    
+    const playTone = (time: number, freq: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, time);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.7, time + duration);
+      
+      gain.gain.setValueAtTime(0, time);
+      gain.gain.linearRampToValueAtTime(0.08, time + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + duration);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(time);
+      osc.stop(time + duration);
+    };
+    
+    // Play two subtle low tones in quick succession (double bubble / drop pop)
+    playTone(ctx.currentTime, 260, 0.1);       // first tone
+    playTone(ctx.currentTime + 0.08, 300, 0.12); // second tone slightly higher for a warm drop
+  } catch (error) {
+    console.warn("Failed to play notification sound:", error);
+  }
+};
+
 interface RoomPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -75,9 +108,16 @@ export default function RoomPage({ params }: RoomPageProps) {
   useEffect(() => {
     if (!isChatOpen && messages.length > prevMsgCount.current) {
       setHasUnread(true);
+      
+      // Play a subtle notification sound for incoming texts (if not our own message)
+      const lastMsg = messages[messages.length - 1];
+      const isOwnMessage = lastMsg && user && lastMsg.senderId === user.id;
+      if (!isOwnMessage) {
+        playNotificationSound();
+      }
     }
     prevMsgCount.current = messages.length;
-  }, [messages.length, isChatOpen]);
+  }, [messages.length, isChatOpen, user]);
 
   // Clear unread when chat opens
   useEffect(() => {
