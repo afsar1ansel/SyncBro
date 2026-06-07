@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { InfiniteCanvas } from "./InfiniteCanvas";
 import { useCanvas } from "@/context/CanvasContext";
@@ -60,6 +60,28 @@ export function RoomCanvas({
   const otherCursors = useCursors(roomId);
   const { screenToWorld, worldToScreen } = useCanvas();
   const [showGiphy, setShowGiphy] = useState(false);
+  const giphyPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showGiphy) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        giphyPickerRef.current &&
+        !giphyPickerRef.current.contains(event.target as Node)
+      ) {
+        setShowGiphy(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [showGiphy]);
+
   const [isDraggingNearTrash, setIsDraggingNearTrash] = useState(false);
   const [isHoveringTrash, setIsHoveringTrash] = useState(false);
 
@@ -211,7 +233,7 @@ export function RoomCanvas({
                   icon={<StickyNote size={20} />}
                   label="Sticky Note"
                 />
-                <div className="relative flex items-center">
+                <div ref={giphyPickerRef} className="relative flex items-center">
                   <ToolButton
                     active={showGiphy}
                     onClick={() => setShowGiphy(!showGiphy)}
